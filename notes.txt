@@ -1,0 +1,17 @@
+1. `python -m robotpy deploy` doesn't need DS. connect dev laptop and test laptop(with DS) at the same time, and one for deploy, the other for running
+2. robotpy docs
+
+https://robotpy.readthedocs.io/
+
+vendor apis are its components/extras, this docs will be helpful
+- https://robotpy.readthedocs.io/projects/navx/en/stable/api.html
+- https://robotpy.readthedocs.io/projects/rev/en/stable/api.html
+- https://api.ctr-electronics.com/phoenix6/release/python/index.html
+
+3. we need a skill/place for RAG for the AI, since the knowledge is too specific and AI may not know by default
+likely make a `frc-robotics` skill and summrize the key points. Need to include
+
+- what's related with actual robot
+- limelight
+
+So now you can keep enriching this demo or you should finialize AGENTS.temp.md and make agent-guide.md a skill, incorporating the above info.

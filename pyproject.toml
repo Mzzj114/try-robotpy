@@ -1,0 +1,23 @@
+[build-system]
+requires = ["robotpy~=2026.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "try-robotpy"
+version = "2026.0.0"
+description = "FRC RobotPy test environment for summer evaluation"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.robotpy]
+robotpy_version = "2026.2.2"
+
+# Optional WPILib components to install (equivalent to pip install robotpy[component1, ...])
+components = ["apriltag", "commands2"]
+
+# Vendor and other pip packages to install on the roboRIO (each line is a requirements.txt-style specifier)
+requires = [
+    "robotpy-rev==2026.0.4",
+    "phoenix6==26.3.0",
+    "robotpy-navx==2026.0.1.1",
+]
