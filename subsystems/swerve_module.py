@@ -137,6 +137,14 @@ class SwerveModule:
 
         self._desired_state = desired_state
 
+    def get_drive_motor(self) -> rev.SparkMax:
+        """Return the drive Spark MAX for simulation access."""
+        return self._drive_motor
+
+    def get_turn_motor(self) -> rev.SparkMax:
+        """Return the azimuth Spark MAX for simulation access."""
+        return self._turn_motor
+
     def stop(self) -> None:
         """Set drive output to zero and hold the current wheel angle."""
         self._drive_motor.set(0.0)

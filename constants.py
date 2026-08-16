@@ -64,8 +64,9 @@ class ModuleConstants:
     kDriveMotorCanIds = (1, 3, 5, 7)
     kTurnMotorCanIds = (2, 4, 6, 8)
 
-    # Absolute encoder zero offsets, in rotations [0, 1).
+    # Absolute encoder zero offsets, in radians.
     # Calibrate each module so that wheel-forward gives 0 radians.
+    # If your calibration tool reports rotations [0, 1), multiply by 2*pi.
     kAngularOffsets = (0.0, 0.0, 0.0, 0.0)
 
     # Drive motor closed-loop gains (NEO Vortex velocity mode).

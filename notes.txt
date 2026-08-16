@@ -15,4 +15,5 @@ likely make a `frc-robotics` skill and summrize the key points. Need to include
 - limelight
 - math & calculations & units
 - better sim
-- code for sds-mk4i-swerve-modules
+- code for sds-mk4i-swerve-modules, rotation pid
+- find a way for ai to read sim results

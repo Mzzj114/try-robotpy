@@ -170,6 +170,10 @@ class SwerveDrive(commands2.Subsystem):
         for module, angle in zip(self._modules, x_angles):
             module.setDesiredState(SwerveModuleState(0.0, angle))
 
+    def getModules(self) -> tuple:
+        """Return the four swerve modules for simulation access."""
+        return self._modules
+
     def getModuleStates(self) -> tuple:
         """Return the current state of each module for telemetry."""
         return tuple(module.getState() for module in self._modules)
