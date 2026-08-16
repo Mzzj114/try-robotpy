@@ -13,5 +13,5 @@ likely make a `frc-robotics` skill and summrize the key points. Need to include
 
 - what's related with actual robot
 - limelight
-
-So now you can keep enriching this demo or you should finialize AGENTS.temp.md and make agent-guide.md a skill, incorporating the above info.
+- math & calculations & units
+- better sim
