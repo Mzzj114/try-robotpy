@@ -67,23 +67,14 @@ print([x for x in dir(wpilib) if 'MotorController' in x])
 ## 3. Utilize AGENTS.md
 
 RobotPy projects have less well-known structures and team specific conventions. These are usually written in `AGENTS.md`.
-- If the project doesn't have `AGENTS.md` yet, inform the user first, and then create one follow [this](./references/create-agents-md.md).
 - If you plan to make big changes, read AGENTS.md first.
 - If you made big changes, update AGENTS.md if necessary
 
 
-## 4. Code Comment
-
-People usually have limited knowledge about various FRC stuff, so comments are important.
-- Write brief doc string for new methods.
-- Write comments for obsure calculations or professional concept (e.g. PID, kinematics, odometry)
-- Write brief comments for each step of a processing or a setup. 
-
-## 5. Suggested Workflow
+## 4. Suggested Workflow
 
 1. Read the relevant file in this repo.
 2. If you need API details, `webfetch` the specific RobotPy/WPILib page.
 3. Make the smallest change that could work.
 4. Run `python -m robotpy test` immediately.
 5. If tests pass, run `python -m robotpy sim --nogui` for 10–20 seconds.
-6. Update this guide if you discover a new gotcha.
