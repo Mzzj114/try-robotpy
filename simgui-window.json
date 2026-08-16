@@ -11,8 +11,8 @@
       "style": "0",
       "userScale": "2",
       "width": "1600",
-      "xpos": "0",
-      "ypos": "29"
+      "xpos": "204",
+      "ypos": "152"
     }
   },
   "Table": {
@@ -41,7 +41,7 @@
     },
     "###Joysticks": {
       "Collapsed": "0",
-      "Pos": "383,735",
+      "Pos": "351,719",
       "Size": "976,179"
     },
     "###NetworkTables": {
@@ -63,6 +63,11 @@
       "Collapsed": "0",
       "Pos": "551,464",
       "Size": "700,400"
+    },
+    "###RoboRIO": {
+      "Collapsed": "0",
+      "Pos": "5,125",
+      "Size": "141,164"
     },
     "###System Joysticks": {
       "Collapsed": "0",

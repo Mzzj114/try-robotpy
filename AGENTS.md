@@ -5,9 +5,9 @@ Agent guidance for the `try-robotpy` RobotPy project.
 ## Project overview
 
 This is a small FRC RobotPy 2026 test project using the command-based framework.
-It simulates a four-wheel differential drivetrain built from Spark MAX motor
-controllers and NEO Vortex brushless motors. The project targets the 2027 FRC
-season, with the roboRIO platform in mind.
+It simulates an MK4i swerve drivetrain built from Spark MAX motor controllers,
+NEO Vortex drive motors, and NEO 550 azimuth motors. The project targets the
+2027 FRC season, with the roboRIO platform in mind.
 
 - Season target: 2027 FRC
 - Platform: roboRIO / RobotPy 2026.2.2
@@ -41,13 +41,15 @@ try-robotpy/
 ├── .venv/                  # Python virtual environment
 ├── commands/               # Command-based commands
 │   ├── __init__.py
-│   └── arcade_drive.py     # Default arcade-drive teleop command
+│   └── swerve_drive.py     # Default swerve teleop command
+├── constants.py            # Hardware constants for MK4i swerve
 ├── physics.py              # pyfrc physics engine (must be in project root)
 ├── pyproject.toml          # RobotPy dependencies and component configuration
 ├── robot.py                # Robot class (commands2.TimedCommandRobot)
 ├── subsystems/             # Subsystems
 │   ├── __init__.py
-│   └── drivetrain.py       # Differential drivetrain (Spark MAX + NEO Vortex)
+│   ├── swerve_drive.py     # Swerve drivetrain (kinematics + odometry)
+│   └── swerve_module.py    # Single MK4i swerve module
 └── tests/
     ├── __init__.py
     └── test_basic.py       # Basic pyfrc tests
@@ -101,6 +103,9 @@ scheduler stays alive.
 - `wpilib.MotorControllerGroup` is directly in `wpilib`, not
   `wpilib.motorcontroller`.
 - `DriverStation.say()` does not exist; use `print()` for console output.
+- Presets are callable methods: use `rev.SparkBaseConfig.Presets.REV_Vortex()`
+  (note the parentheses), not `Preset.REV_Vortex`.
+- The idle-mode setter is `setIdleMode(...)`, not `idleMode(...)`.
 
 ### Physics / pyfrc
 - `physics.py` must live in the project root, not `sim/physics.py`.
