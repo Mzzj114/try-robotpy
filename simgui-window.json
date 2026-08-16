@@ -11,8 +11,8 @@
       "style": "0",
       "userScale": "2",
       "width": "1600",
-      "xpos": "192",
-      "ypos": "174"
+      "xpos": "0",
+      "ypos": "29"
     }
   },
   "Table": {
@@ -29,6 +29,11 @@
     }
   },
   "Window": {
+    "###/SmartDashboard/Field": {
+      "Collapsed": "0",
+      "Pos": "378,365",
+      "Size": "751,325"
+    },
     "###FMS": {
       "Collapsed": "0",
       "Pos": "18,693",
@@ -36,12 +41,12 @@
     },
     "###Joysticks": {
       "Collapsed": "0",
-      "Pos": "283,472",
+      "Pos": "383,735",
       "Size": "976,179"
     },
     "###NetworkTables": {
       "Collapsed": "0",
-      "Pos": "303,199",
+      "Pos": "299,121",
       "Size": "937,231"
     },
     "###NetworkTables Info": {
@@ -67,7 +72,7 @@
     "###Timing": {
       "Collapsed": "0",
       "Pos": "19,185",
-      "Size": "162,142"
+      "Size": "162,168"
     },
     "Debug##Default": {
       "Collapsed": "0",
