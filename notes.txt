@@ -11,9 +11,10 @@ vendor apis are its components/extras, this docs will be helpful
 3. we need a skill/place for RAG for the AI, since the knowledge is too specific and AI may not know by default
 likely make a `frc-robotics` skill and summrize the key points. Need to include
 
-- what's related with actual robot
 - limelight
 - math & calculations & units
-- better sim
-- code for sds-mk4i-swerve-modules, rotation pid
 - find a way for ai to read sim results
+
+2027
+- systemcore replaces robot rio
+- pyfrc is gone and simulation and testing goes to wpilib

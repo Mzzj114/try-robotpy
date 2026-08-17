@@ -9,37 +9,20 @@ metadata:
 
 # Best Practice Developing a FRC Robot in Python
 
-FRC programming is not very common so the available information is limited and easily outdated. You should primarily focus on reliable sources mentioned in this skill.
-
 ## 1. Where to Find Documentation
-
-### Context7: Use it for wpilib but NOT RobotPy
-[WPILIB](https://docs.wpilib.org/en/stable/) context7 id: `wpilib_en_stable`
-Use it to get general informaiton about FRC control system. For example
-- "What's Command-Based Programming?"
-- "How to code for the Power Distribution Module?"
-
-However, Context7 **don't** have the main RobotPy docs. Do not spend time searching Context7 for `robotpy` or vendor API details.
 
 ### Primary sources (use these)
 
-Documentations
-| Topic | URL |
-|-------|-----|
-| RobotPy detailed docs | https://robotpy.readthedocs.io/en/stable/index.html |
-| RobotPy REV API | https://robotpy.readthedocs.io/projects/rev/en/stable/api.html |
-| REV class list | https://robotpy.readthedocs.io/projects/rev/en/stable/rev.html |
-| Navx API | https://robotpy.readthedocs.io/projects/navx/en/stable/api.html |
-| Phoenix 6 API | https://api.ctr-electronics.com/phoenix6/stable/python/ |
-| WPILib Python docs | https://docs.wpilib.org/en/stable/docs/software/python/ |
+| Sources | Access | Content | Reliability | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| wpilib | Context7 ID: `wpilib_en_stable` or URL: `https://docs.wpilib.org/en/stable/` | General knowledge and docs of everything, including conceptual knowledge, coding, and software usage. | High | This is a mixed guide for Java, C++, Python, and LabView. It doesn't have any vendor specific details nor API documentation. |
+| robotpy docs | Use `webfetch` with `format=markdown` to fetch `https://robotpy.readthedocs.io/en/stable/index.html` and follow links in it for further discovery. | Specific and detailed docs for robotpy. It has links to vendors' python API too. | High | Context7 unavailable. |
+| robotpy's REV lib API docs | Use `webfetch` with `format=markdown` to fetch `https://robotpy.readthedocs.io/projects/rev/en/stable/rev.html` and follow links in it for further discovery. | List of all classes and links to their doc page. | High | Context7 unavailable. |
+| robotpy's Navx API docs | Use `webfetch` with `format=markdown` to fetch `https://robotpy.readthedocs.io/projects/navx/en/stable/api.html` and follow links in it for further discovery. | List of all classes and links to their doc page. | High | Context7 unavailable. |
+| Phoenix 6 API docs | Use `webfetch` with `format=markdown` to fetch `https://api.ctr-electronics.com/phoenix6/stable/python/` and follow links in it for further discovery. | List of all classes and links to their doc page. | High | Context7 unavailable. |
+| robotpy examples | This is a GitHub repo ([mostrobotpy](https://github.com/robotpy/mostrobotpy)) and examples are in `https://github.com/robotpy/mostrobotpy/tree/main/examples`. | Example codes for robotpy on various scenarios. | High | — |
+| websearch | use your websearch tool to browse the internet | - | Low | Internet info may be outdated or not applicable, but this is a useful fallback for tricky issues. Check post date for search results. |
 
-Example Projects
-- https://github.com/robotpy/mostrobotpy/tree/main/examples
-
-### How to read them quickly
-- Use `websearch_web_search_exa` for "how do I do X in RobotPy 2026" style questions.
-- Use `webfetch` with `format=markdown` to pull specific API pages when you know the class name (e.g. `rev/SparkMax.html`).
-- Search GitHub with `grep_app_searchGitHub` only as a fallback; RobotPy 2026 code examples are still sparse.
 
 ### Other Information Refernces
 - [Quick intro to the competition](./references/first-robotics-competition.md)
@@ -67,14 +50,11 @@ print([x for x in dir(wpilib) if 'MotorController' in x])
 ## 3. Utilize AGENTS.md
 
 RobotPy projects have less well-known structures and team specific conventions. These are usually written in `AGENTS.md`.
-- If you plan to make big changes, read AGENTS.md first.
-- If you made big changes, update AGENTS.md if necessary
-
 
 ## 4. Suggested Workflow
 
 1. Read the relevant file in this repo.
-2. If you need API details, `webfetch` the specific RobotPy/WPILib page.
+2. Read docs for conceptual info or API details if necessary
 3. Make the smallest change that could work.
 4. Run `python -m robotpy test` immediately.
 5. If tests pass, run `python -m robotpy sim --nogui` for 10–20 seconds.

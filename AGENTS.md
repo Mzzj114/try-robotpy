@@ -65,8 +65,7 @@ it under `sim/physics.py` causes a `Cannot enable physics support` error.
 - Write comments for obsure calculations or professional concept (e.g. PID, kinematics, odometry)
 - Prefer explicit configuration objects (for example `rev.SparkMaxConfig`) over
   multiple individual setter calls.
-- Keep CAN IDs and other hardware constants as class attributes so they are easy
-  to update when wiring changes.
+- Keep CAN IDs and other hardware constants in `constants.py` so they are easy to update when wiring changes.
 
 ## Testing
 
@@ -111,11 +110,3 @@ scheduler stays alive.
 - `physics.py` must live in the project root, not `sim/physics.py`.
 - Use units from `pyfrc.physics.units import units`; do not construct
   standalone `pint.Quantity` objects.
-
-## Useful references
-
-- RobotPy docs: https://robotpy.readthedocs.io/en/stable/
-- RobotPy REV API: https://robotpy.readthedocs.io/projects/rev/en/stable/api.html
-- WPILib Python docs: https://docs.wpilib.org/en/stable/docs/software/python/
-- Phoenix 6 Python API: https://api.ctr-electronics.com/phoenix6/stable/python/
-- NavX Python API: https://robotpy.readthedocs.io/projects/navx/en/stable/api.html
