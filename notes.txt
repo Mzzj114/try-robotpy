@@ -12,7 +12,7 @@ vendor apis are its components/extras, this docs will be helpful
 likely make a `frc-robotics` skill and summrize the key points. Need to include
 
 - limelight
-- math & calculations & units
+- math & calculations
 - find a way for ai to read sim results
 
 2027

@@ -63,6 +63,7 @@ it under `sim/physics.py` causes a `Cannot enable physics support` error.
 - Declare types for function parameters and return values.
 - Keep docstrings concise but include units and expected ranges where relevant.
 - Write comments for obsure calculations or professional concept (e.g. PID, kinematics, odometry)
+- Leave comments and references links on top of complex files.
 - Prefer explicit configuration objects (for example `rev.SparkMaxConfig`) over
   multiple individual setter calls.
 - Keep CAN IDs and other hardware constants in `constants.py` so they are easy to update when wiring changes.
