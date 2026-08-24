@@ -224,3 +224,9 @@ saves/
 
 # Some AI stuff
 .omo/
+opencode.jsonc
+
+# pyfrc sim stuff
+simgui*
+
+recordings/

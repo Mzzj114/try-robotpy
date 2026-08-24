@@ -151,11 +151,7 @@ class SwerveDrive(commands2.Subsystem):
         """Return the most recent chassis speeds commanded by teleop/auto."""
 
         chassis_speeds = self._desired_chassis_speeds
-
-        wpilib.SmartDashboard.putNumber("Chasis_speeds/vx", chassis_speeds.vx)
-        wpilib.SmartDashboard.putNumber("Chasis_speeds/vy", chassis_speeds.vy)
-        wpilib.SmartDashboard.putNumber("Chasis_speeds/omega", chassis_speeds.omega)
-
+        
         return chassis_speeds
 
     def setX(self) -> None:

@@ -74,3 +74,4 @@ note that PID gains are unitless (but input/output must match units)
 3. Make the smallest change that could work.
 4. Run `python -m robotpy test` immediately.
 5. If tests pass, run `python -m robotpy sim --nogui` for 10–20 seconds.
+6. When using the NT MCP server, remember `python -m robotpy sim` is long-running and does not exit on its own. To connect and interact with it, keep the sim process alive while making separate MCP calls. Use a background task or an explicit timeout on the `bash` tool so the process does not block forever; you cannot send a live stop signal (e.g. Ctrl+C) to an already-running synchronous tool call.
