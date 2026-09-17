@@ -1,7 +1,7 @@
 """pyfrc physics engine for the MK4i swerve drivetrain.
 
 The simulation uses the chassis speeds commanded by the SwerveDrive subsystem
-(as computed from joystick inputs or auto routines) to move the robot on the
+(as computed from controller inputs or auto routines) to move the robot on the
 simulated field. It also updates the simulated Spark MAX encoders and NavX gyro
 so that the robot's odometry tracks the physics pose.
 """

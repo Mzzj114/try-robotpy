@@ -52,7 +52,7 @@ class DriveConstants:
     kMagnitudeSlewRate = 1.8  # percent/s (1 = 100%)
     kRotationalSlewRate = 2.0  # percent/s (1 = 100%)
 
-    # Deadband for joystick input.
+    # Deadband for driver controller input.
     kDriveDeadband = 0.05
 
 

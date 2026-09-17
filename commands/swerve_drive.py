@@ -1,6 +1,6 @@
 """Default teleop command for the swerve drivetrain.
 
-Maps joystick inputs to field-oriented or robot-oriented ChassisSpeeds.
+Maps Xbox controller inputs to field-oriented or robot-oriented ChassisSpeeds.
 """
 
 import math
@@ -13,7 +13,7 @@ from subsystems.swerve_drive import SwerveDrive
 
 
 class SwerveDriveCommand(commands2.Command):
-    """Drive the swerve chassis from joystick suppliers."""
+    """Drive the swerve chassis from controller axis suppliers."""
 
     def __init__(
         self,
@@ -72,7 +72,7 @@ class SwerveDriveCommand(commands2.Command):
 
     @staticmethod
     def _apply_deadband(value: float) -> float:
-        """Zero small joystick inputs to avoid drift."""
+        """Zero small controller inputs to avoid drift."""
         if abs(value) < DriveConstants.kDriveDeadband:
             return 0.0
         # Rescale so output is continuous after the deadband.

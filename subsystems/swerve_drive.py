@@ -111,7 +111,7 @@ class SwerveDrive(commands2.Subsystem):
         rot: float,
         field_relative: bool,
     ) -> None:
-        """Drive the robot with joystick-style inputs.
+        """Drive the robot with controller-style inputs.
 
         :param x_speed: Forward velocity in m/s (positive = forward).
         :param y_speed: Leftward velocity in m/s (positive = left).
