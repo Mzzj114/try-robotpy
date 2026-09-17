@@ -61,8 +61,8 @@ class ModuleConstants:
 
     # Order must match DriveConstants.kModuleLocations:
     # front left, front right, rear left, rear right.
-    kDriveMotorCanIds = (1, 3, 5, 7)
-    kTurnMotorCanIds = (2, 4, 6, 8)
+    kDriveMotorCanIds = (11, 21, 41, 31)
+    kTurnMotorCanIds = (12, 22, 42, 32)
 
     # Absolute encoder zero offsets, in radians.
     # Calibrate each module so that wheel-forward gives 0 radians.

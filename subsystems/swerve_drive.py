@@ -25,7 +25,7 @@ class SwerveDrive(commands2.Subsystem):
         super().__init__()
 
         self._gyro = navx.AHRS(
-            navx.AHRS.NavXComType.kUSB1,
+            navx.AHRS.NavXComType.kMXP_SPI,
             navx.AHRS.NavXUpdateRate.k100Hz,
         )
 
