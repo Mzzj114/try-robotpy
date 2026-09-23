@@ -5,6 +5,7 @@ import commands2
 import wpilib
 
 from commands.swerve_drive import SwerveDriveCommand
+from commands.tune_pid import TuneDrivePID, TuneTurnPID
 from constants import OIConstants
 from subsystems.swerve_drive import SwerveDrive
 
@@ -27,6 +28,15 @@ class Robot(commands2.TimedCommandRobot):
                 rot_supplier=lambda: -self.driver_controller.getRightX(),
                 field_relative=True,
             )
+        )
+
+        # Tuning helpers: run these from SmartDashboard to tune one module's
+        # drive/steering PID live. They interrupt the default teleop command.
+        wpilib.SmartDashboard.putData(
+            "Tune/Tune Drive PID", TuneDrivePID(self.swerve)
+        )
+        wpilib.SmartDashboard.putData(
+            "Tune/Tune Turn PID", TuneTurnPID(self.swerve)
         )
 
         print("[robotInit] Swerve drive and teleop command ready")

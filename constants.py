@@ -78,12 +78,15 @@ class ModuleConstants:
     # If your calibration tool reports rotations [0, 1), multiply by 2*pi.
     kAngularOffsets = (0.0, 0.0, 0.0, 0.0)
 
-    # Drive motor closed-loop gains (NEO Vortex velocity mode).
+    # Drive motor velocity loop gains. The loop now runs on the roboRIO and
+    # outputs a voltage, so it needs a feedforward (S/V/A) in addition to PID.
     # These are starting guesses and must be tuned on the real robot.
     kDriveP = 0.1
     kDriveI = 0.01
     kDriveD = 0.0
-    kDriveFF = 0.0
+    kDriveS = 0.0     # volts
+    kDriveV = 0.0     # volt-seconds per meter
+    kDriveA = 0.0     # volt-seconds^2 per meter
 
     # Azimuth steering PID gains and feedforward, carried over from last
     # year's Java swerve that steered correctly.
