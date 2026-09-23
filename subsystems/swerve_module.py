@@ -1,10 +1,11 @@
 """A single MK4i swerve module using two Spark MAX controllers.
 
-The drive motor is a NEO Vortex (velocity closed-loop on the built-in encoder).
-The azimuth motor is a NEO 550 driven by voltage from a roboRIO PID whose
-feedback is a CTRE CANcoder on the steering axis. A CANcoder talks over CAN, so
-it cannot feed the Spark MAX data port; the position loop must live on the
-roboRIO instead of on the Spark MAX.
+Both control loops run on the roboRIO and output a voltage to their Spark MAX.
+The drive motor is a NEO Vortex whose velocity loop reads the Spark MAX
+built-in encoder. The azimuth motor is a NEO 550 whose position loop reads a
+CTRE CANcoder on the steering axis. A CANcoder talks over CAN, so it cannot
+feed the Spark MAX data port; the position loop must live on the roboRIO
+instead of on the Spark MAX.
 
 References:
 - REV Spark MAX API: https://robotpy.readthedocs.io/projects/rev/en/stable/api.html
@@ -19,7 +20,12 @@ import wpilib
 from phoenix6.configs import CANcoderConfiguration, MagnetSensorConfigs
 from phoenix6.hardware import CANcoder
 from phoenix6.signals import SensorDirectionValue
-from wpimath.controller import ProfiledPIDControllerRadians, SimpleMotorFeedforwardRadians
+from wpimath.controller import (
+    PIDController,
+    ProfiledPIDControllerRadians,
+    SimpleMotorFeedforwardMeters,
+    SimpleMotorFeedforwardRadians,
+)
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
 from wpimath.trajectory import TrapezoidProfileRadians
@@ -61,13 +67,6 @@ class SwerveModule:
         )
         drive_config.encoder.velocityConversionFactor(
             DriveConstants.kDriveEncoderVelocityFactor
-        )
-        drive_config.closedLoop.setFeedbackSensor(
-            rev.FeedbackSensor.kPrimaryEncoder
-        ).pid(
-            ModuleConstants.kDriveP,
-            ModuleConstants.kDriveI,
-            ModuleConstants.kDriveD,
         )
 
         self._drive_motor.configure(
@@ -126,9 +125,22 @@ class SwerveModule:
             ModuleConstants.kTurnA,
         )
 
-        # Convenience handles for sensors and controllers.
+        # Drive velocity PID + feedforward also runs on the roboRIO. The Spark
+        # MAX built-in encoder is the feedback, but the loop lives here so both
+        # swerve loops can be tuned and logged the same way.
+        self._drive_pid = PIDController(
+            ModuleConstants.kDriveP,
+            ModuleConstants.kDriveI,
+            ModuleConstants.kDriveD,
+        )
+        self._drive_feedforward = SimpleMotorFeedforwardMeters(
+            ModuleConstants.kDriveS,
+            ModuleConstants.kDriveV,
+            ModuleConstants.kDriveA,
+        )
+
+        # Convenience handle for the drive encoder.
         self._drive_encoder = self._drive_motor.getEncoder()
-        self._drive_pid = self._drive_motor.getClosedLoopController()
 
         # Cache once: firmware/serial are blocking CAN reads, not loop-safe.
         self._drive_firmware = self._drive_motor.getFirmwareString()
@@ -139,6 +151,7 @@ class SwerveModule:
         self._desired_state = SwerveModuleState(0.0, Rotation2d())
         self._turn_target = Rotation2d()
         self._turn_voltage_command = 0.0
+        self._drive_voltage_command = 0.0
 
     def _get_turn_radians(self) -> float:
         """Read the CANcoder azimuth in radians, including the offset."""
@@ -219,6 +232,9 @@ class SwerveModule:
             f"{prefix}/Drive Output", self._drive_motor.getAppliedOutput()
         )
         wpilib.SmartDashboard.putNumber(
+            f"{prefix}/Drive Command (V)", self._drive_voltage_command
+        )
+        wpilib.SmartDashboard.putNumber(
             f"{prefix}/Drive Current (A)", self._drive_motor.getOutputCurrent()
         )
 
@@ -270,9 +286,13 @@ class SwerveModule:
         target.optimize(current_rotation)
         target.cosineScale(current_rotation)
 
-        self._drive_pid.setSetpoint(
-            target.speed, rev.SparkLowLevel.ControlType.kVelocity
-        )
+        # Drive velocity loop on the roboRIO: feedforward on the target speed
+        # plus PID on the measured speed, output as a voltage.
+        measured_speed = self._drive_encoder.getVelocity()
+        self._drive_voltage_command = self._drive_feedforward.calculate(
+            target.speed
+        ) + self._drive_pid.calculate(measured_speed, target.speed)
+        self._drive_motor.setVoltage(self._drive_voltage_command)
 
         # The azimuth motor is voltage-driven; the roboRIO closes the loop on
         # the CANcoder and adds a profile-based feedforward.
@@ -296,14 +316,23 @@ class SwerveModule:
         """Return the azimuth Spark MAX for simulation access."""
         return self._turn_motor
 
+    def get_drive_pid_controller(self) -> PIDController:
+        """Return the roboRIO drive velocity PID for live tuning."""
+        return self._drive_pid
+
+    def get_turn_pid_controller(self) -> ProfiledPIDControllerRadians:
+        """Return the roboRIO steering PID for live tuning."""
+        return self._turn_pid
+
     def get_can_coder(self) -> CANcoder:
         """Return the azimuth CANcoder for simulation access."""
         return self._can_coder
 
     def stop(self) -> None:
-        """Stop drive, hold the azimuth angle, and reset the steering profile."""
-        self._drive_motor.set(0.0)
-        self._turn_pid.reset(self._get_turn_radians())
+        """Stop drive, hold the azimuth angle, and reset both control loops."""
+        self._drive_motor.setVoltage(0.0)
+        # self._drive_pid.reset()
+        # self._turn_pid.reset(self._get_turn_radians())
         self._turn_motor.setVoltage(0.0)
 
     def resetEncoders(self) -> None:
