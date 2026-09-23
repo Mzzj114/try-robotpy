@@ -21,6 +21,9 @@ from subsystems.swerve_module import SwerveModule
 class SwerveDrive(commands2.Subsystem):
     """Coordinates four swerve modules and tracks field pose."""
 
+    # Order matches DriveConstants.kModuleLocations.
+    _module_names = ("Front Left", "Front Right", "Rear Left", "Rear Right")
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -29,27 +32,14 @@ class SwerveDrive(commands2.Subsystem):
             navx.AHRS.NavXUpdateRate.k100Hz,
         )
 
-        self._modules = (
+        self._modules = tuple(
             SwerveModule(
-                ModuleConstants.kDriveMotorCanIds[0],
-                ModuleConstants.kTurnMotorCanIds[0],
-                ModuleConstants.kAngularOffsets[0],
-            ),
-            SwerveModule(
-                ModuleConstants.kDriveMotorCanIds[1],
-                ModuleConstants.kTurnMotorCanIds[1],
-                ModuleConstants.kAngularOffsets[1],
-            ),
-            SwerveModule(
-                ModuleConstants.kDriveMotorCanIds[2],
-                ModuleConstants.kTurnMotorCanIds[2],
-                ModuleConstants.kAngularOffsets[2],
-            ),
-            SwerveModule(
-                ModuleConstants.kDriveMotorCanIds[3],
-                ModuleConstants.kTurnMotorCanIds[3],
-                ModuleConstants.kAngularOffsets[3],
-            ),
+                ModuleConstants.kDriveMotorCanIds[i],
+                ModuleConstants.kTurnMotorCanIds[i],
+                ModuleConstants.kTurnCanCoderIds[i],
+                ModuleConstants.kAngularOffsets[i],
+            )
+            for i in range(4)
         )
 
         self._odometry = SwerveDrive4Odometry(
@@ -78,6 +68,17 @@ class SwerveDrive(commands2.Subsystem):
         wpilib.SmartDashboard.putNumber(
             "Swerve/Pose Theta", pose.rotation().degrees()
         )
+
+        # Battery voltage confirms the bus is healthy while testing motors.
+        wpilib.SmartDashboard.putNumber(
+            "Diagnostics/Battery Voltage (V)",
+            wpilib.RobotController.getBatteryVoltage(),
+        )
+
+        # Per-module telemetry. Compare "Angle" against "Angle Desired" to
+        # verify the azimuth motors are actually steering the modules.
+        for name, module in zip(self._module_names, self._modules):
+            module.publishTelemetry(f"Swerve/{name}")
 
     def getPose(self) -> Pose2d:
         """Return the current field-relative pose."""
@@ -169,6 +170,10 @@ class SwerveDrive(commands2.Subsystem):
     def getModules(self) -> tuple:
         """Return the four swerve modules for simulation access."""
         return self._modules
+
+    def getGyro(self) -> navx.AHRS:
+        """Return the NavX gyro for simulation access."""
+        return self._gyro
 
     def getModuleStates(self) -> tuple:
         """Return the current state of each module for telemetry."""

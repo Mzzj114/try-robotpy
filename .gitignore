@@ -226,7 +226,6 @@ saves/
 .omo/
 opencode.jsonc
 
-# pyfrc sim stuff
-simgui*
-
 recordings/
+
+ctre_sim/

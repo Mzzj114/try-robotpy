@@ -26,8 +26,6 @@ class DriveConstants:
     # Convert motor rotations to meters (drive) and radians (turn).
     kDriveEncoderPositionFactor = kWheelCircumferenceMeters / kDriveGearRatio
     kDriveEncoderVelocityFactor = kDriveEncoderPositionFactor / 60.0
-    kTurnEncoderPositionFactor = (2.0 * math.pi) / kTurnGearRatio
-    kTurnEncoderVelocityFactor = kTurnEncoderPositionFactor / 60.0
 
     # Chassis dimensions (distance from robot center to each module).
     # These are placeholders; measure the actual robot.
@@ -46,6 +44,7 @@ class DriveConstants:
     # Driver-oriented speed limits.
     kMaxSpeedMetersPerSecond = 4.8
     kMaxAngularSpeed = 2.0 * math.pi  # rad/s
+    kModuleMaxAngularAcceleration = 6.0 * math.pi  # rad/s^2, for the steering profile
 
     # Slew rate limiters for teleop (optional smoothing).
     kDirectionSlewRate = 1.2  # rad/s
@@ -64,6 +63,16 @@ class ModuleConstants:
     kDriveMotorCanIds = (11, 21, 41, 31)
     kTurnMotorCanIds = (12, 22, 42, 32)
 
+    # CTRE CANcoder CAN IDs for the azimuth absolute encoders, same order.
+    kTurnCanCoderIds = (13, 23, 43, 33)
+
+    # CANcoder rotations per full azimuth revolution (MK4i kit is 1:1).
+    kTurnCanCoderGearRatio = 1.0
+
+    # Azimuth motor direction. Matches last year's Java swerve (all modules
+    # inverted) so positive voltage and positive CANcoder share a direction.
+    kTurnMotorInverted = True
+
     # Absolute encoder zero offsets, in radians.
     # Calibrate each module so that wheel-forward gives 0 radians.
     # If your calibration tool reports rotations [0, 1), multiply by 2*pi.
@@ -72,14 +81,18 @@ class ModuleConstants:
     # Drive motor closed-loop gains (NEO Vortex velocity mode).
     # These are starting guesses and must be tuned on the real robot.
     kDriveP = 0.1
-    kDriveI = 0.0
+    kDriveI = 0.01
     kDriveD = 0.0
     kDriveFF = 0.0
 
-    # Turn motor closed-loop gains (position mode, radians).
-    kTurnP = 1.0
+    # Azimuth steering PID gains and feedforward, carried over from last
+    # year's Java swerve that steered correctly.
+    kTurnP = 0.95
     kTurnI = 0.0
-    kTurnD = 0.0
+    kTurnD = 0.25
+    kTurnS = 0.8    # volts
+    kTurnV = 0.41   # volt-seconds per radian
+    kTurnA = 0.01   # volt-seconds^2 per radian
 
     # Current limits.
     kDriveCurrentLimit = 60  # amps

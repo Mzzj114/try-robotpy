@@ -12,6 +12,7 @@ import typing
 import rev
 import wpilib
 import wpilib.simulation
+from phoenix6.hardware import CANcoder
 from pyfrc.physics.core import PhysicsInterface
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModuleState
@@ -28,11 +29,11 @@ class _ModuleSim:
     def __init__(
         self,
         drive_motor: rev.SparkMax,
-        turn_motor: rev.SparkMax,
+        turn_coder: CANcoder,
         angular_offset: float,
     ) -> None:
         self.drive_encoder_sim = rev.SparkRelativeEncoderSim(drive_motor)
-        self.turn_encoder_sim = rev.SparkAbsoluteEncoderSim(turn_motor)
+        self.turn_sim = turn_coder.sim_state
         self.angular_offset = angular_offset
         self.last_turn_angle = 0.0
         self.drive_distance = 0.0
@@ -58,11 +59,12 @@ class _ModuleSim:
             turn_velocity = 0.0
         self.last_turn_angle = wheel_angle
 
-        # The absolute encoder reading equals wheel angle plus the calibration
-        # offset (same convention used in SwerveModule.getState).
+        # The CANcoder reading equals wheel angle plus the calibration offset
+        # (same convention used in SwerveModule.getState). Phoenix reports
+        # positions in rotations, so convert from radians.
         absolute_position = _wrap_angle(wheel_angle + self.angular_offset)
-        self.turn_encoder_sim.setPosition(absolute_position)
-        self.turn_encoder_sim.setVelocity(turn_velocity)
+        self.turn_sim.set_raw_position(absolute_position / (2.0 * math.pi))
+        self.turn_sim.set_velocity(turn_velocity / (2.0 * math.pi))
 
         # Integrate drive wheel distance.
         self.drive_distance += target.speed * dt
@@ -90,14 +92,17 @@ class PhysicsEngine:
         self.module_sims = tuple(
             _ModuleSim(
                 module.get_drive_motor(),
-                module.get_turn_motor(),
+                module.get_can_coder(),
                 ModuleConstants.kAngularOffsets[i],
             )
             for i, module in enumerate(modules)
         )
 
-        # NavX SimDevice created by navx.AHRS on kUSB1 is named navX-Sensor[2].
-        self.gyro_sim = wpilib.simulation.SimDeviceSim("navX-Sensor[2]")
+        # The NavX SimDevice is named "navX-Sensor" and indexed by the AHRS
+        # port (getPort()). For kMXP_SPI that index is 0.
+        self.gyro_sim = wpilib.simulation.SimDeviceSim(
+            "navX-Sensor", robot.swerve.getGyro().getPort()
+        )
         self.gyro_yaw = self.gyro_sim.getDouble("Yaw")
 
     def update_sim(self, now: float, tm_diff: float) -> None:

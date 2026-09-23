@@ -32,8 +32,25 @@ class Robot(commands2.TimedCommandRobot):
         print("[robotInit] Swerve drive and teleop command ready")
 
     def robotPeriodic(self) -> None:
-        """Run the command scheduler every loop."""
+        """Run the command scheduler and publish driver input every loop."""
         commands2.CommandScheduler.getInstance().run()
+
+        # Raw controller axes; confirms the sticks are read and centered.
+        wpilib.SmartDashboard.putNumber(
+            "Driver/Left X", self.driver_controller.getLeftX()
+        )
+        wpilib.SmartDashboard.putNumber(
+            "Driver/Left Y", self.driver_controller.getLeftY()
+        )
+        wpilib.SmartDashboard.putNumber(
+            "Driver/Right X", self.driver_controller.getRightX()
+        )
+        wpilib.SmartDashboard.putNumber(
+            "Driver/Right Y", self.driver_controller.getRightY()
+        )
+        wpilib.SmartDashboard.putBoolean(
+            "Driver/A Button", self.driver_controller.getAButton()
+        )
 
     def disabledInit(self) -> None:
         print("[disabledInit]")

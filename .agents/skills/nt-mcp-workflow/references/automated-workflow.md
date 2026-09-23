@@ -40,13 +40,19 @@ Wait a few seconds for the robot/sim to boot, then proceed with the chosen workf
 ## 4. Drive and observe
 
 1. `nt_set` / `nt_set_multiple` — publish inputs such as a `/SmartDashboard/MCP/*` setpoint the robot reads.
-2. `nt_subscribe` — watch telemetry for a bounded duration. To keep responses small and avoid wasting context tokens:
-   - `sample_interval` — decimate to one sample per N seconds.
-   - `change_only` — skip samples that barely changed (great for mostly-static values; a spinning pose still streams).
-   - `limit` — cap the number of returned samples.
-   - `duration` — how long to collect.
+2. `nt_subscribe` — watch telemetry for a bounded duration. The default `output="file"` captures the window into an NDJSON recording (same format as `nt-recorder`, written into `output_dir` or `NT_RECORDINGS_DIR`, default `./recordings`) and returns a compact receipt — `recording_id`, `path`, `duration_seconds`, `rows`, `topic_count`, the first 50 `topics` (with `topics_truncated`), and `truncated` — with **no sample values**. Window into the recording afterwards with `nt_get_history` / `nt_subscribe_offline`. This keeps capture out of your context; see `references/recording.md`.
 
-   Example: `nt_subscribe(prefixes=["/SmartDashboard/Swerve"], duration=3, sample_interval=0.5, change_only=true)`.
+   For a small inline response instead, use `output="summary"` (min/max/mean/last per topic) or `output="samples"` (raw samples). Both inline modes are bounded:
+   - `limit` — cap the number of returned samples **per topic** (default `None`, uncapped).
+   - `max_rows` — cap the total samples across all topics (default 5000).
+   - A final character ceiling keeps the whole response under 60,000 serialized characters; every drop states `truncated: true`.
+   - Inline modes refuse a bare `"/"` prefix — narrow it (e.g. `/SmartDashboard/`) or use `output="file"`.
+
+   Note: `output` supersedes the removed `format` parameter. An older version of this skill documented `format="summary"` — pass `output="summary"` now.
+
+   Other knobs: `sample_interval` decimates to one sample per N seconds per topic; `change_only` skips samples that barely changed (great for mostly-static values; a spinning pose still streams); `duration` is how long to collect.
+
+   Example: `nt_subscribe(prefixes=["/SmartDashboard/Swerve"], duration=3, sample_interval=0.5, change_only=0.01)`.
 
 3. `nt_disconnect` — tear down the connection when finished.
 
