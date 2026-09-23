@@ -1,10 +1,12 @@
 """A single MK4i swerve module using two Spark MAX controllers.
 
-The drive motor is a NEO Vortex (velocity closed-loop on the built-in encoder).
-The azimuth motor is a NEO 550 driven by voltage from a roboRIO PID whose
-feedback is a CTRE CANcoder on the steering axis. A CANcoder talks over CAN, so
-it cannot feed the Spark MAX data port; the position loop must live on the
-roboRIO instead of on the Spark MAX.
+TEST BRANCH: all PID/feedforward control has been removed to keep the module
+easy to bring up. The drive motor is open-loop (duty cycle proportional to the
+desired speed). The azimuth motor is a NEO 550 driven by a simple proportional
+voltage on the CTRE CANcoder angle error. A CANcoder talks over CAN, so it
+cannot feed the Spark MAX data port; the angle loop must live on the roboRIO.
+
+This is intentionally less precise than the tuned closed-loop version.
 
 References:
 - REV Spark MAX API: https://robotpy.readthedocs.io/projects/rev/en/stable/api.html
@@ -19,10 +21,8 @@ import wpilib
 from phoenix6.configs import CANcoderConfiguration, MagnetSensorConfigs
 from phoenix6.hardware import CANcoder
 from phoenix6.signals import SensorDirectionValue
-from wpimath.controller import ProfiledPIDControllerRadians, SimpleMotorFeedforwardRadians
 from wpimath.geometry import Rotation2d
 from wpimath.kinematics import SwerveModulePosition, SwerveModuleState
-from wpimath.trajectory import TrapezoidProfileRadians
 
 from constants import DriveConstants, ModuleConstants
 
@@ -62,13 +62,6 @@ class SwerveModule:
         drive_config.encoder.velocityConversionFactor(
             DriveConstants.kDriveEncoderVelocityFactor
         )
-        drive_config.closedLoop.setFeedbackSensor(
-            rev.FeedbackSensor.kPrimaryEncoder
-        ).pid(
-            ModuleConstants.kDriveP,
-            ModuleConstants.kDriveI,
-            ModuleConstants.kDriveD,
-        )
 
         self._drive_motor.configure(
             drive_config,
@@ -107,28 +100,8 @@ class SwerveModule:
         self._turn_position_signal = self._can_coder.get_absolute_position()
         self._magnet_health_signal = self._can_coder.get_magnet_health()
 
-        # Steering profiled PID + feedforward runs on the roboRIO because the
-        # Spark MAX has no encoder. Continuous input lets the wheel take the
-        # shortest path across +/- pi; the profile limits angular rate.
-        self._turn_pid = ProfiledPIDControllerRadians(
-            ModuleConstants.kTurnP,
-            ModuleConstants.kTurnI,
-            ModuleConstants.kTurnD,
-            TrapezoidProfileRadians.Constraints(
-                DriveConstants.kMaxAngularSpeed,
-                DriveConstants.kModuleMaxAngularAcceleration,
-            ),
-        )
-        self._turn_pid.enableContinuousInput(-math.pi, math.pi)
-        self._turn_feedforward = SimpleMotorFeedforwardRadians(
-            ModuleConstants.kTurnS,
-            ModuleConstants.kTurnV,
-            ModuleConstants.kTurnA,
-        )
-
-        # Convenience handles for sensors and controllers.
+        # Convenience handle for the drive encoder.
         self._drive_encoder = self._drive_motor.getEncoder()
-        self._drive_pid = self._drive_motor.getClosedLoopController()
 
         # Cache once: firmware/serial are blocking CAN reads, not loop-safe.
         self._drive_firmware = self._drive_motor.getFirmwareString()
@@ -181,7 +154,7 @@ class SwerveModule:
         error_deg = (self._turn_target - turn_rotation).degrees()
 
         # Steer angle tracking: if Angle Error never shrinks, the azimuth
-        # motor is not reaching its setpoint (wiring, encoder, or PID issue).
+        # motor is not reaching its setpoint (wiring or encoder issue).
         wpilib.SmartDashboard.putNumber(
             f"{prefix}/Angle (deg)", (turn_rotation - self._angular_offset).degrees()
         )
@@ -257,8 +230,8 @@ class SwerveModule:
     def setDesiredState(self, desired_state: SwerveModuleState) -> None:
         """Command the module to a speed and angle.
 
-        Applies SwerveModuleState.optimize to minimize wheel rotation and
-        cosine compensation to reduce lateral force while turning.
+        TEST BRANCH: no PID. Drive is open-loop duty cycle; steering is a
+        simple proportional voltage on the CANcoder angle error.
         """
         current_rotation = Rotation2d(self._get_turn_radians())
 
@@ -270,20 +243,15 @@ class SwerveModule:
         target.optimize(current_rotation)
         target.cosineScale(current_rotation)
 
-        self._drive_pid.setSetpoint(
-            target.speed, rev.SparkLowLevel.ControlType.kVelocity
-        )
+        # Open-loop drive: map desired speed onto a -1..1 duty cycle.
+        drive_output = target.speed / DriveConstants.kMaxSpeedMetersPerSecond
+        self._drive_motor.set(max(-1.0, min(1.0, drive_output)))
 
-        # The azimuth motor is voltage-driven; the roboRIO closes the loop on
-        # the CANcoder and adds a profile-based feedforward.
-        turn_output = self._turn_pid.calculate(
-            current_rotation.radians(), target.angle.radians()
-        )
-        turn_feedforward = self._turn_feedforward.calculate(
-            self._turn_pid.getSetpoint().velocity
-        )
-        self._turn_voltage_command = turn_output + turn_feedforward
-        self._turn_motor.setVoltage(turn_output + turn_feedforward)
+        # Simple proportional steering. Rotation2d subtraction wraps to the
+        # shortest path, so the wheel never takes the long way around.
+        angle_error = (target.angle - current_rotation).radians()
+        self._turn_voltage_command = ModuleConstants.kTurnSimpleKp * angle_error
+        self._turn_motor.setVoltage(self._turn_voltage_command)
 
         self._turn_target = target.angle
         self._desired_state = desired_state
@@ -301,9 +269,8 @@ class SwerveModule:
         return self._can_coder
 
     def stop(self) -> None:
-        """Stop drive, hold the azimuth angle, and reset the steering profile."""
+        """Stop drive and cut steering voltage (brake mode holds the angle)."""
         self._drive_motor.set(0.0)
-        self._turn_pid.reset(self._get_turn_radians())
         self._turn_motor.setVoltage(0.0)
 
     def resetEncoders(self) -> None:

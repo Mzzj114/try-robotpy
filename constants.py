@@ -94,6 +94,10 @@ class ModuleConstants:
     kTurnV = 0.41   # volt-seconds per radian
     kTurnA = 0.01   # volt-seconds^2 per radian
 
+    # TEST BRANCH: simple proportional steering gain, volts per radian of
+    # angle error (no PID, no feedforward).
+    kTurnSimpleKp = 2.0
+
     # Current limits.
     kDriveCurrentLimit = 60  # amps
     kTurnCurrentLimit = 20   # amps
