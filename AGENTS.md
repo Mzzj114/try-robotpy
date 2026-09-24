@@ -111,3 +111,7 @@ scheduler stays alive.
 - `physics.py` must live in the project root, not `sim/physics.py`.
 - Use units from `pyfrc.physics.units import units`; do not construct
   standalone `pint.Quantity` objects.
+
+### Unit Tests
+- NavX sim: getAngle() only reflects a written sim value after a sim tick; the test steps while disabled so physics.py (which runs only when enabled) doesn't overwrite it.
+- robotpy test runs robot-fixture tests in isolated subprocesses and re-appends your pytest args. Passing a file path (e.g. -- tests/test_basic.py) makes each worker re-collect the whole file, creating two robots in one process → SparkMax instance already created. Use python -m robotpy test bare, or select with -k instead of file paths.
