@@ -220,6 +220,10 @@ class SwerveDrive(commands2.Subsystem):
         """Return the four swerve modules for simulation access."""
         return self._modules
 
+    def getModuleNames(self) -> tuple:
+        """Return the module display names, matching kModuleLocations order."""
+        return self._module_names
+
     def getGyro(self) -> navx.AHRS:
         """Return the NavX gyro for simulation access."""
         return self._gyro

@@ -4,6 +4,7 @@
 import commands2
 import wpilib
 
+from commands.module_test import ModuleTestCommand
 from commands.swerve_drive import SwerveDriveCommand
 from commands.tune_pid import TuneDrivePID, TuneTurnPID
 from constants import OIConstants
@@ -37,6 +38,12 @@ class Robot(commands2.TimedCommandRobot):
         )
         wpilib.SmartDashboard.putData(
             "Tune/Tune Turn PID", TuneTurnPID(self.swerve)
+        )
+
+        # Manual single-module test: type a speed (m/s) and angle (deg) in
+        # SmartDashboard to command one module directly.
+        wpilib.SmartDashboard.putData(
+            "Test/Module State", ModuleTestCommand(self.swerve)
         )
 
         print("[robotInit] Swerve drive and teleop command ready")
