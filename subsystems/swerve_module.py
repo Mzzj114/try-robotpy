@@ -94,15 +94,6 @@ class SwerveModule:
 
         # ---- Azimuth absolute encoder (CANcoder) ----
         self._can_coder = CANcoder(can_coder_id)
-        self._can_coder.configurator.apply(
-            CANcoderConfiguration().with_magnet_sensor(
-                MagnetSensorConfigs()
-                .with_sensor_direction(
-                    SensorDirectionValue.COUNTER_CLOCKWISE_POSITIVE
-                )
-                .with_magnet_offset(0.0)
-            )
-        )
         self._turn_position_signal = self._can_coder.get_absolute_position()
         self._magnet_health_signal = self._can_coder.get_magnet_health()
 
