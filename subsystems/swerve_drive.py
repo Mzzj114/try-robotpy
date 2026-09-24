@@ -12,7 +12,12 @@ import commands2
 import navx
 import wpilib
 from wpimath.geometry import Pose2d, Rotation2d
-from wpimath.kinematics import ChassisSpeeds, SwerveDrive4Odometry, SwerveModuleState
+from wpimath.kinematics import (
+    ChassisSpeeds,
+    SwerveDrive4Odometry,
+    SwerveModulePosition,
+    SwerveModuleState,
+)
 
 from constants import DriveConstants, ModuleConstants
 from subsystems.swerve_module import SwerveModule
@@ -32,20 +37,39 @@ class SwerveDrive(commands2.Subsystem):
             navx.AHRS.NavXUpdateRate.k100Hz,
         )
 
-        self._modules = tuple(
+        self._modules: tuple[
+            SwerveModule, SwerveModule, SwerveModule, SwerveModule
+        ] = (
             SwerveModule(
-                ModuleConstants.kDriveMotorCanIds[i],
-                ModuleConstants.kTurnMotorCanIds[i],
-                ModuleConstants.kTurnCanCoderIds[i],
-                ModuleConstants.kAngularOffsets[i],
-            )
-            for i in range(4)
+                ModuleConstants.kDriveMotorCanIds[0],
+                ModuleConstants.kTurnMotorCanIds[0],
+                ModuleConstants.kTurnCanCoderIds[0],
+                ModuleConstants.kAngularOffsets[0],
+            ),
+            SwerveModule(
+                ModuleConstants.kDriveMotorCanIds[1],
+                ModuleConstants.kTurnMotorCanIds[1],
+                ModuleConstants.kTurnCanCoderIds[1],
+                ModuleConstants.kAngularOffsets[1],
+            ),
+            SwerveModule(
+                ModuleConstants.kDriveMotorCanIds[2],
+                ModuleConstants.kTurnMotorCanIds[2],
+                ModuleConstants.kTurnCanCoderIds[2],
+                ModuleConstants.kAngularOffsets[2],
+            ),
+            SwerveModule(
+                ModuleConstants.kDriveMotorCanIds[3],
+                ModuleConstants.kTurnMotorCanIds[3],
+                ModuleConstants.kTurnCanCoderIds[3],
+                ModuleConstants.kAngularOffsets[3],
+            ),
         )
 
         self._odometry = SwerveDrive4Odometry(
             DriveConstants.kDriveKinematics,
             self.getRotation2d(),
-            tuple(module.getPosition() for module in self._modules),
+            self._modulePositions(),
         )
 
         self._field = wpilib.Field2d()
@@ -57,7 +81,7 @@ class SwerveDrive(commands2.Subsystem):
         """Update odometry and publish telemetry every scheduler loop."""
         self._odometry.update(
             self.getRotation2d(),
-            tuple(module.getPosition() for module in self._modules),
+            self._modulePositions(),
         )
 
         pose = self.getPose()
@@ -88,8 +112,29 @@ class SwerveDrive(commands2.Subsystem):
         """Reset the odometry to a known pose."""
         self._odometry.resetPosition(
             self.getRotation2d(),
-            tuple(module.getPosition() for module in self._modules),
+            self._modulePositions(),
             pose,
+        )
+
+    def _modulePositions(
+        self,
+    ) -> tuple[
+        SwerveModulePosition,
+        SwerveModulePosition,
+        SwerveModulePosition,
+        SwerveModulePosition,
+    ]:
+        """Return the four module positions as a fixed-size tuple.
+
+        WPILib's SwerveDrive4Odometry signatures require exactly four
+        positions, so the unpacking guarantees a concrete 4-tuple type.
+        """
+        front_left, front_right, rear_left, rear_right = self._modules
+        return (
+            front_left.getPosition(),
+            front_right.getPosition(),
+            rear_left.getPosition(),
+            rear_right.getPosition(),
         )
 
     def resetEncoders(self) -> None:
@@ -131,6 +176,10 @@ class SwerveDrive(commands2.Subsystem):
     def driveRobotRelative(self, chassis_speeds: ChassisSpeeds) -> None:
         """Command the modules directly from a ChassisSpeeds object."""
         self._desired_chassis_speeds = chassis_speeds
+
+        wpilib.SmartDashboard.putNumber("Swerve/Chassis Speeds/vx (m/s)", chassis_speeds.vx)
+        wpilib.SmartDashboard.putNumber("Swerve/Chassis Speeds/vy (m/s)", chassis_speeds.vy)
+        wpilib.SmartDashboard.putNumber("Swerve/Chassis Speeds/omega (deg/s)", chassis_speeds.omega_dps)
 
         module_states = DriveConstants.kDriveKinematics.toSwerveModuleStates(
             chassis_speeds

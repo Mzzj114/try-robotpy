@@ -84,9 +84,9 @@ class ModuleConstants:
     kDriveP = 0.1
     kDriveI = 0.01
     kDriveD = 0.0
-    kDriveS = 0.0     # volts
-    kDriveV = 0.0     # volt-seconds per meter
-    kDriveA = 0.0     # volt-seconds^2 per meter
+    kDriveS = 0.3337     # volts
+    kDriveV = 1.22     # volt-seconds per meter
+    kDriveA = 0.13     # volt-seconds^2 per meter
 
     # Azimuth steering PID gains and feedforward, carried over from last
     # year's Java swerve that steered correctly.
@@ -98,7 +98,7 @@ class ModuleConstants:
     kTurnA = 0.01   # volt-seconds^2 per radian
 
     # Current limits.
-    kDriveCurrentLimit = 60  # amps
+    kDriveCurrentLimit = 50  # amps
     kTurnCurrentLimit = 20   # amps
 
 
