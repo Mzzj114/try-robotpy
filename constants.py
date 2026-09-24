@@ -76,7 +76,7 @@ class ModuleConstants:
     # Absolute encoder zero offsets, in radians.
     # Calibrate each module so that wheel-forward gives 0 radians.
     # If your calibration tool reports rotations [0, 1), multiply by 2*pi.
-    kAngularOffsets = (0.0, 0.0, 0.0, 0.0)
+    kAngularOffsets = (math.pi, 0.0, math.pi, 0.0)
 
     # Drive motor closed-loop gains (NEO Vortex velocity mode).
     # These are starting guesses and must be tuned on the real robot.
