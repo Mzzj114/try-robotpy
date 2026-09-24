@@ -40,13 +40,20 @@
         "header": {
           "open": true
         }
+      },
+      "navX-Sensor[4]": {
+        "header": {
+          "open": true
+        }
       }
     }
   },
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
-      "/SmartDashboard/Field": "Field2d"
+      "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/Tune/Tune Drive PID": "Command",
+      "/SmartDashboard/Tune/Tune Turn PID": "Command"
     },
     "windows": {
       "/SmartDashboard/Field": {
