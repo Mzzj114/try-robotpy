@@ -1,0 +1,41 @@
+{
+  "type": "frc",
+  "fiducials": [
+    {
+      "family": "apriltag3_36h11_classic",
+      "id": 0,
+      "size": 165.1,
+      "transform": [
+        0, -1, 0, 1.8669,
+        1, 0, 0, -1.30175,
+        0, 0, 1, 0.4445,
+        0, 0, 0, 1
+      ],
+      "unique": 1
+    },
+    {
+      "family": "apriltag3_36h11_classic",
+      "id": 2,
+      "size": 165.1,
+      "transform": [
+        0, -1, 0, 1.4605,
+        1, 0, 0, -1.30175,
+        0, 0, 1, 0.4445,
+        0, 0, 0, 1
+      ],
+      "unique": 1
+    },
+    {
+      "family": "apriltag3_36h11_classic",
+      "id": 4,
+      "size": 165.1,
+      "transform": [
+        1, 0, 0, -2.24155,
+        0, 1, 0, -0.1143,
+        0, 0, 1, 0.71755,
+        0, 0, 0, 1
+      ],
+      "unique": 1
+    }
+  ]
+}
