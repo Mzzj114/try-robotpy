@@ -8,6 +8,7 @@ from commands.module_test import ModuleTestCommand
 from commands.swerve_drive import SwerveDriveCommand
 from commands.tune_pid import TuneDrivePID, TuneTurnPID
 from constants import OIConstants
+from debug_console import DebugConsole
 from subsystems.swerve_drive import SwerveDrive
 
 
@@ -46,11 +47,19 @@ class Robot(commands2.TimedCommandRobot):
             "Test/Module State", ModuleTestCommand(self.swerve)
         )
 
+        # Debug-only remote Python console over NetworkTables. Write code to
+        # /Debug/Cmd and read the result from /Debug/Out. Test use only; never
+        # enable this on a competition robot.
+        self.debug = DebugConsole(self)
+
         print("[robotInit] Swerve drive and teleop command ready")
 
     def robotPeriodic(self) -> None:
         """Run the command scheduler and publish driver input every loop."""
         commands2.CommandScheduler.getInstance().run()
+
+        # Execute any pending debug console command.
+        self.debug.periodic()
 
         # Raw controller axes; confirms the sticks are read and centered.
         wpilib.SmartDashboard.putNumber(
