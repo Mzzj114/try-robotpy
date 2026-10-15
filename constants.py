@@ -52,7 +52,7 @@ class DriveConstants:
     kRotationalSlewRate = 2.0  # percent/s (1 = 100%)
 
     # Deadband for driver controller input.
-    kDriveDeadband = 0.05
+    kDriveDeadband = 0.09
 
 
 class ModuleConstants:
