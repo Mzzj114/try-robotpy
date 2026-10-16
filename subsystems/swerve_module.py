@@ -319,6 +319,10 @@ class SwerveModule:
         """Return the azimuth CANcoder for simulation access."""
         return self._can_coder
 
+    def get_angular_offset(self) -> Rotation2d:
+        """Return the encoder zero offset that converts encoder to wheel angle."""
+        return self._angular_offset
+
     def stop(self) -> None:
         """Stop drive, hold the azimuth angle, and reset both control loops."""
         self._drive_motor.setVoltage(0.0)

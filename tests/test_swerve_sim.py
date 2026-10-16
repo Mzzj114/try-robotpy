@@ -18,11 +18,22 @@ if TYPE_CHECKING:
     from robot import Robot
 
 
-def _point_module_forward(module) -> None:
-    """Force the module's simulated CANcoder to read 0 rad."""
+def _point_module_forward(
+    module, control: "TestController"
+) -> None:
+    """Force the module's wheel to point forward (0 rad).
+
+    The CANcoder reports ``wheel_angle + angular_offset`` (see ``physics.py``),
+    so wheel-forward corresponds to a raw position equal to the module's
+    angular offset, not 0. Phoenix only publishes the written value to the
+    StatusSignal after a sim tick; step while disabled so physics.py (which
+    runs only when enabled) does not overwrite it.
+    """
+    offset_rotations = module.get_angular_offset().radians() / (2.0 * math.pi)
     coder_sim = module.get_can_coder().sim_state
-    coder_sim.set_raw_position(0.0)
+    coder_sim.set_raw_position(offset_rotations)
     coder_sim.set_velocity(0.0)
+    control.step_timing(seconds=0.05, autonomous=False, enabled=False)
 
 
 def test_get_rotation2d_negates_navx_clockwise_yaw(
@@ -49,16 +60,18 @@ def test_set_desired_state_takes_shortest_path(
     """A target ~180 deg away flips the wheel and negates speed."""
     with control.run_robot():
         module = robot.swerve.getModules()[0]
-        _point_module_forward(module)
+        _point_module_forward(module, control)
 
         module.setDesiredState(
             SwerveModuleState(1.0, Rotation2d.fromDegrees(179.0))
         )
 
         # getGoal() is the optimized target; getSetpoint() would only be the
-        # first profiled step toward it.
+        # first profiled step toward it. The steering PID runs in the encoder
+        # frame, so subtract the offset to get the wheel-frame angle.
         turn_goal = module.get_turn_pid_controller().getGoal().position
-        assert math.degrees(turn_goal) == pytest.approx(-1.0, abs=0.5)
+        wheel_goal = Rotation2d(turn_goal) - module.get_angular_offset()
+        assert wheel_goal.degrees() == pytest.approx(-1.0, abs=0.5)
         assert module.get_drive_pid_controller().getSetpoint() == pytest.approx(
             -1.0, abs=0.01
         )
@@ -70,7 +83,7 @@ def test_set_desired_state_scales_speed_by_cosine(
     """A 60 deg steering error keeps cos(60) = 50% of the commanded speed."""
     with control.run_robot():
         module = robot.swerve.getModules()[0]
-        _point_module_forward(module)
+        _point_module_forward(module, control)
 
         module.setDesiredState(
             SwerveModuleState(1.0, Rotation2d.fromDegrees(60.0))
