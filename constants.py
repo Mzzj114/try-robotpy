@@ -102,6 +102,30 @@ class ModuleConstants:
     kTurnCurrentLimit = 20   # amps
 
 
+class VisionConstants:
+    """Limelight MegaTag2 localization settings."""
+
+    # Each entry is (NetworkTables table name, camera IP). These names are
+    # the "NetworkTables Name" values currently configured on the cameras.
+    # The field map and the camera's robot-space pose (LL Forward/Right/Up/
+    # Roll/Pitch/Yaw) must also be configured in each camera's web UI.
+    kLimelights = (
+        ("limelight-left", "10.83.26.17"),
+        ("limelight-front", "10.83.26.18"),
+        ("limelight-right", "10.83.26.19"),
+    )
+
+    # The yaw sent to MegaTag2 is CCW-positive and 0 degrees must point at
+    # the red alliance wall, so zero the NavX in that orientation at startup.
+    # MegaTag2 estimates are not trusted while the robot spins faster than
+    # this. NavX getRate() is in degrees per second.
+    kMaxAngularVelocityDps = 360.0
+
+    # Docs recommendation: trust vision translation, but not its heading.
+    # MegaTag2 heading comes from the gyro sent in robot_orientation_set.
+    kVisionStdDevs = (0.7, 0.7, 9999999.0)
+
+
 class OIConstants:
     """Operator interface constants."""
 
