@@ -115,8 +115,9 @@ class VisionConstants:
         ("limelight-right", "10.83.26.19"),
     )
 
-    # The yaw sent to MegaTag2 is CCW-positive and 0 degrees must point at
-    # the red alliance wall, so zero the NavX in that orientation at startup.
+    # The yaw sent to MegaTag2 is CCW-positive and 0 degrees must point along
+    # the loaded .fmap's +x axis (the red alliance wall on a standard FRC
+    # map). Zero the NavX in that orientation at startup.
     # MegaTag2 estimates are not trusted while the robot spins faster than
     # this. NavX getRate() is in degrees per second.
     kMaxAngularVelocityDps = 360.0

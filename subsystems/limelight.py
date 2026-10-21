@@ -5,7 +5,10 @@ named after the camera (the "NetworkTables Name" in the web UI). No vendor
 library is required; this module reads the documented NT keys directly.
 
 MegaTag2 needs the robot's field-relative yaw every frame. Publish it with
-``set_robot_orientation`` before reading ``botpose_orb_wpiblue``.
+``set_robot_orientation`` before reading ``botpose_orb``. ``botpose_orb`` is
+the pose in the loaded .fmap's coordinate system. The ``*_wpiblue`` variant
+applies the standard FRC blue-origin transform and is only valid for the
+standard FRC field map, not for a custom .fmap.
 
 References:
 - MegaTag2: https://docs.limelightvision.io/docs/docs-limelight/pipeline-apriltag/apriltag-robot-localization-megatag2
@@ -22,7 +25,7 @@ from wpimath.geometry import Pose2d, Rotation2d
 
 @dataclass(frozen=True)
 class MegaTag2Estimate:
-    """One MegaTag2 pose measurement in WPILib blue-origin field space."""
+    """One MegaTag2 pose measurement in the loaded .fmap's field space."""
 
     pose: Pose2d
     timestamp_seconds: float
@@ -61,7 +64,10 @@ class Limelight:
         self.ip = ip
 
         table = ntcore.NetworkTableInstance.getDefault().getTable(table_name)
-        self._pose_entry = table.getEntry("botpose_orb_wpiblue")
+        # botpose_orb is the pose in the uploaded .fmap's coordinate system.
+        # Do not use botpose_orb_wpiblue with a custom .fmap: it rewrites the
+        # pose using the standard FRC field/alliance dimensions.
+        self._pose_entry = table.getEntry("botpose_orb")
         self._orientation_entry = table.getEntry("robot_orientation_set")
         self._heartbeat_entry = table.getEntry("hb")
         self._target_valid_entry = table.getEntry("tv")
@@ -81,8 +87,9 @@ class Limelight:
         """Publish the robot orientation MegaTag2 uses for this frame.
 
         The array is ``[yaw, yawRate, pitch, pitchRate, roll, rollRate]`` in
-        degrees and degrees per second. MegaTag2 is CCW-positive, with 0
-        degrees facing the red alliance wall.
+        degrees and degrees per second. MegaTag2 is CCW-positive. Yaw 0 must
+        point along the loaded .fmap's +x axis (the red alliance wall for a
+        standard FRC field map).
         """
         self._orientation_entry.setDoubleArray(
             [

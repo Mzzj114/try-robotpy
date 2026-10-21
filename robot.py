@@ -77,6 +77,11 @@ class Robot(commands2.TimedCommandRobot):
         wpilib.SmartDashboard.putBoolean(
             "Driver/A Button", self.driver_controller.getAButton()
         )
+        
+        wpilib.SmartDashboard.putNumber(
+            "Swerve/Navx Angle", self.swerve.getRotation2d().degrees()
+        )
+
 
     def disabledInit(self) -> None:
         print("[disabledInit]")
