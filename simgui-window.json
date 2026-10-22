@@ -6,13 +6,13 @@
     "GLOBAL": {
       "font": "Proggy Dotted",
       "fps": "120",
-      "height": "900",
-      "maximized": "0",
+      "height": "1111",
+      "maximized": "1",
       "style": "0",
       "userScale": "2",
-      "width": "1600",
-      "xpos": "192",
-      "ypos": "174"
+      "width": "1920",
+      "xpos": "0",
+      "ypos": "29"
     }
   },
   "Table": {
@@ -29,19 +29,34 @@
     }
   },
   "Window": {
+    "###/SmartDashboard/Field": {
+      "Collapsed": "0",
+      "Pos": "378,365",
+      "Size": "751,325"
+    },
+    "###/SmartDashboard/Tune/Tune Drive PID": {
+      "Collapsed": "0",
+      "Pos": "282,30",
+      "Size": "351,80"
+    },
     "###FMS": {
       "Collapsed": "0",
-      "Pos": "18,693",
+      "Pos": "79,663",
       "Size": "202,214"
     },
     "###Joysticks": {
       "Collapsed": "0",
-      "Pos": "283,472",
-      "Size": "976,179"
+      "Pos": "98,823",
+      "Size": "976,239"
+    },
+    "###Keyboard 0 Settings": {
+      "Collapsed": "0",
+      "Pos": "10,50",
+      "Size": "300,560"
     },
     "###NetworkTables": {
       "Collapsed": "0",
-      "Pos": "303,199",
+      "Pos": "299,121",
       "Size": "937,231"
     },
     "###NetworkTables Info": {
@@ -59,15 +74,20 @@
       "Pos": "551,464",
       "Size": "700,400"
     },
+    "###RoboRIO": {
+      "Collapsed": "0",
+      "Pos": "5,125",
+      "Size": "141,164"
+    },
     "###System Joysticks": {
       "Collapsed": "0",
-      "Pos": "12,371",
+      "Pos": "15,378",
       "Size": "232,254"
     },
     "###Timing": {
       "Collapsed": "0",
       "Pos": "19,185",
-      "Size": "162,142"
+      "Size": "162,194"
     },
     "Debug##Default": {
       "Collapsed": "0",

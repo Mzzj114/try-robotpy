@@ -224,3 +224,8 @@ saves/
 
 # Some AI stuff
 .omo/
+opencode.jsonc
+
+recordings/
+
+ctre_sim/

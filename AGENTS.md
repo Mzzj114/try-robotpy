@@ -5,9 +5,9 @@ Agent guidance for the `try-robotpy` RobotPy project.
 ## Project overview
 
 This is a small FRC RobotPy 2026 test project using the command-based framework.
-It simulates a four-wheel differential drivetrain built from Spark MAX motor
-controllers and NEO Vortex brushless motors. The project targets the 2027 FRC
-season, with the roboRIO platform in mind.
+It simulates an MK4i swerve drivetrain built from Spark MAX motor controllers,
+NEO Vortex drive motors, and NEO 550 azimuth motors. The project targets the
+2027 FRC season, with the roboRIO platform in mind.
 
 - Season target: 2027 FRC
 - Platform: roboRIO / RobotPy 2026.2.2
@@ -41,13 +41,15 @@ try-robotpy/
 ├── .venv/                  # Python virtual environment
 ├── commands/               # Command-based commands
 │   ├── __init__.py
-│   └── arcade_drive.py     # Default arcade-drive teleop command
+│   └── swerve_drive.py     # Default swerve teleop command
+├── constants.py            # Hardware constants for MK4i swerve
 ├── physics.py              # pyfrc physics engine (must be in project root)
 ├── pyproject.toml          # RobotPy dependencies and component configuration
 ├── robot.py                # Robot class (commands2.TimedCommandRobot)
 ├── subsystems/             # Subsystems
 │   ├── __init__.py
-│   └── drivetrain.py       # Differential drivetrain (Spark MAX + NEO Vortex)
+│   ├── swerve_drive.py     # Swerve drivetrain (kinematics + odometry)
+│   └── swerve_module.py    # Single MK4i swerve module
 └── tests/
     ├── __init__.py
     └── test_basic.py       # Basic pyfrc tests
@@ -61,10 +63,10 @@ it under `sim/physics.py` causes a `Cannot enable physics support` error.
 - Declare types for function parameters and return values.
 - Keep docstrings concise but include units and expected ranges where relevant.
 - Write comments for obsure calculations or professional concept (e.g. PID, kinematics, odometry)
+- Leave comments and references links on top of complex files.
 - Prefer explicit configuration objects (for example `rev.SparkMaxConfig`) over
   multiple individual setter calls.
-- Keep CAN IDs and other hardware constants as class attributes so they are easy
-  to update when wiring changes.
+- Keep CAN IDs and other hardware constants in `constants.py` so they are easy to update when wiring changes.
 
 ## Testing
 
@@ -101,16 +103,15 @@ scheduler stays alive.
 - `wpilib.MotorControllerGroup` is directly in `wpilib`, not
   `wpilib.motorcontroller`.
 - `DriverStation.say()` does not exist; use `print()` for console output.
+- Presets are callable methods: use `rev.SparkBaseConfig.Presets.REV_Vortex()`
+  (note the parentheses), not `Preset.REV_Vortex`.
+- The idle-mode setter is `setIdleMode(...)`, not `idleMode(...)`.
 
 ### Physics / pyfrc
 - `physics.py` must live in the project root, not `sim/physics.py`.
 - Use units from `pyfrc.physics.units import units`; do not construct
   standalone `pint.Quantity` objects.
 
-## Useful references
-
-- RobotPy docs: https://robotpy.readthedocs.io/en/stable/
-- RobotPy REV API: https://robotpy.readthedocs.io/projects/rev/en/stable/api.html
-- WPILib Python docs: https://docs.wpilib.org/en/stable/docs/software/python/
-- Phoenix 6 Python API: https://api.ctr-electronics.com/phoenix6/stable/python/
-- NavX Python API: https://robotpy.readthedocs.io/projects/navx/en/stable/api.html
+### Unit Tests
+- NavX sim: getAngle() only reflects a written sim value after a sim tick; the test steps while disabled so physics.py (which runs only when enabled) doesn't overwrite it.
+- robotpy test runs robot-fixture tests in isolated subprocesses and re-appends your pytest args. Passing a file path (e.g. -- tests/test_basic.py) makes each worker re-collect the whole file, creating two robots in one process → SparkMax instance already created. Use python -m robotpy test bare, or select with -k instead of file paths.
