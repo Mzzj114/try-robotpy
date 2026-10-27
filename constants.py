@@ -127,6 +127,22 @@ class VisionConstants:
     kVisionStdDevs = (0.7, 0.7, 9999999.0)
 
 
+class AutoConstants:
+    """PathPlanner autonomous configuration."""
+
+    # Name of the auto routine stored in deploy/pathplanner/autos.
+    kAutoName = "New Auto"
+
+    # Holonomic path-following gains. Translation is in meters per second,
+    # rotation in radians per second. Start P-only and tune on the real robot.
+    kTranslationP = 5.0
+    kTranslationI = 0.0
+    kTranslationD = 2.0
+    kRotationP = 5.0
+    kRotationI = 0.0
+    kRotationD = 0.0
+
+
 class OIConstants:
     """Operator interface constants."""
 

@@ -132,3 +132,19 @@ def test_odometry_follows_physics_rotation(
         control.step_timing(seconds=1.0, autonomous=False, enabled=True)
 
         assert robot.swerve.getPose().rotation().degrees() > 30.0
+
+
+def test_autonomous_runs_pathplanner_auto(
+    control: "TestController", robot: "Robot"
+) -> None:
+    """Entering autonomous follows the GUI auto and leaves the start pose."""
+    with control.run_robot():
+        # Give the auto a known, different starting pose to prove PathPlanner
+        # resets odometry from the path's ideal starting state.
+        robot.swerve.resetPose(Pose2d(5.0, 5.0, Rotation2d()))
+
+        control.step_timing(seconds=1.0, autonomous=True, enabled=True)
+
+        pose = robot.swerve.getPose()
+        assert pose.translation().norm() > 0.1
+        assert pose.x < 5.0

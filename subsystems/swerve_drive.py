@@ -13,6 +13,9 @@ References:
 import commands2
 import navx
 import wpilib
+from pathplannerlib.auto import AutoBuilder
+from pathplannerlib.config import PIDConstants, RobotConfig
+from pathplannerlib.controller import PPHolonomicDriveController
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d
 from wpimath.kinematics import (
@@ -21,7 +24,12 @@ from wpimath.kinematics import (
     SwerveModuleState,
 )
 
-from constants import DriveConstants, ModuleConstants, VisionConstants
+from constants import (
+    AutoConstants,
+    DriveConstants,
+    ModuleConstants,
+    VisionConstants,
+)
 from subsystems.limelight import Limelight
 from subsystems.swerve_module import SwerveModule
 
@@ -89,6 +97,40 @@ class SwerveDrive(commands2.Subsystem):
         wpilib.SmartDashboard.putData("Field", self._field)
 
         self._desired_chassis_speeds = ChassisSpeeds()
+
+        # PathPlanner integration. RobotConfig reads the GUI project settings
+        # in deploy/pathplanner/settings.json (mass, module positions, wheel
+        # radius, gearing), so the GUI must stay the source of truth for the
+        # robot geometry.
+        AutoBuilder.configure(
+            self.getPose,
+            self.resetPose,
+            self.getRobotRelativeSpeeds,
+            lambda speeds, _feedforwards: self.driveRobotRelative(speeds),
+            PPHolonomicDriveController(
+                PIDConstants(
+                    AutoConstants.kTranslationP,
+                    AutoConstants.kTranslationI,
+                    AutoConstants.kTranslationD,
+                ),
+                PIDConstants(
+                    AutoConstants.kRotationP,
+                    AutoConstants.kRotationI,
+                    AutoConstants.kRotationD,
+                ),
+            ),
+            RobotConfig.fromGUISettings(),
+            self._should_flip_path,
+            self,
+        )
+
+    @staticmethod
+    def _should_flip_path() -> bool:
+        """Mirror paths for the red alliance while keeping a blue origin."""
+        return (
+            wpilib.DriverStation.getAlliance()
+            == wpilib.DriverStation.Alliance.kRed
+        )
 
     def periodic(self) -> None:
         """Update the pose estimate and publish telemetry every loop."""
@@ -311,6 +353,17 @@ class SwerveDrive(commands2.Subsystem):
         chassis_speeds = self._desired_chassis_speeds
         
         return chassis_speeds
+
+    def getRobotRelativeSpeeds(self) -> ChassisSpeeds:
+        """Return the measured robot-relative chassis speeds.
+
+        PathPlanner uses measured (not commanded) speeds for path-following
+        feedback. The four module states are converted back through swerve
+        kinematics to recover the chassis velocity.
+        """
+        return DriveConstants.kDriveKinematics.toChassisSpeeds(
+            self.getModuleStates()
+        )
 
     def setX(self) -> None:
         """Park the modules in an X orientation to resist pushing."""

@@ -3,11 +3,12 @@
 
 import commands2
 import wpilib
+from pathplannerlib.auto import PathPlannerAuto
 
 from commands.module_test import ModuleTestCommand
 from commands.swerve_drive import SwerveDriveCommand
 from commands.tune_pid import TuneDrivePID, TuneTurnPID
-from constants import OIConstants
+from constants import AutoConstants, OIConstants
 from debug_console import DebugConsole
 from subsystems.swerve_drive import SwerveDrive
 
@@ -19,6 +20,10 @@ class Robot(commands2.TimedCommandRobot):
         self.driver_controller = wpilib.XboxController(
             OIConstants.kDriverControllerPort
         )
+
+        # Load the auto once at startup so the autonomous period does not pay
+        # the file-parsing cost. AutoBuilder is configured by SwerveDrive.
+        self.auto_command = PathPlannerAuto(AutoConstants.kAutoName)
 
         # Default command: field-oriented swerve drive from the driver's Xbox controller.
         # Left stick drives translation; right stick X rotates the chassis.
@@ -90,13 +95,16 @@ class Robot(commands2.TimedCommandRobot):
         pass
 
     def autonomousInit(self) -> None:
-        print("[autonomousInit]")
+        print(f"[autonomousInit] Running auto '{AutoConstants.kAutoName}'")
+        self.auto_command.schedule()
 
     def autonomousPeriodic(self) -> None:
         pass
 
     def teleopInit(self) -> None:
         print("[teleopInit]")
+        # Do not let a long auto keep driving into the teleop period.
+        self.auto_command.cancel()
 
     def teleopPeriodic(self) -> None:
         pass

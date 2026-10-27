@@ -225,10 +225,10 @@ saves/
 # Some AI stuff
 .omo/
 opencode.jsonc
+session-ses*
 
 recordings/
 
-ctre_sim/
-
 # frc / robotics
-simgui-*
+simgui*
+ctre_sim/
