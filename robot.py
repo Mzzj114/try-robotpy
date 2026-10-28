@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """RobotPy Command-based robot with an MK4i NEO Vortex swerve drivetrain."""
 
+from collections.abc import Callable
+
 import commands2
 import wpilib
+from commands2.button import Trigger
+from commands2.sysid import SysIdRoutine
 from pathplannerlib.auto import PathPlannerAuto
 
 from commands.module_test import ModuleTestCommand
 from commands.swerve_drive import SwerveDriveCommand
+from commands.sysid import SysIdCommands
 from commands.tune_pid import TuneDrivePID, TuneTurnPID
 from constants import AutoConstants, OIConstants
 from debug_console import DebugConsole
@@ -16,10 +21,19 @@ from subsystems.swerve_drive import SwerveDrive
 class Robot(commands2.TimedCommandRobot):
     def robotInit(self) -> None:
         """Create subsystems, input devices, and default commands."""
+        # SysId writes through DataLogManager, so logging must be running
+        # before any characterization test. This also records NetworkTables
+        # and Driver Station data to the same .wpilog.
+        wpilib.DataLogManager.start()
+        wpilib.DriverStation.startDataLog(
+            wpilib.DataLogManager.getLog()
+        )
+
         self.swerve = SwerveDrive()
         self.driver_controller = wpilib.XboxController(
             OIConstants.kDriverControllerPort
         )
+        self.sysid = SysIdCommands(self.swerve)
 
         # Load the auto once at startup so the autonomous period does not pay
         # the file-parsing cost. AutoBuilder is configured by SwerveDrive.
@@ -35,6 +49,35 @@ class Robot(commands2.TimedCommandRobot):
                 rot_supplier=lambda: -self.driver_controller.getRightX(),
                 field_relative=True,
             )
+        )
+
+        # SysId drive characterization. These are test-only bindings; the
+        # command runs only while the button is held and releasing it stops
+        # the drive. Hold quasistatic tests for the full ramp, but release
+        # dynamic tests after about 2 s to stay inside a short runway.
+        def _button_pressed(read_button: Callable[[], bool]) -> bool:
+            """Avoid HAL warnings when no controller is plugged in."""
+            return self.driver_controller.isConnected() and read_button()
+
+        Trigger(
+            lambda: _button_pressed(self.driver_controller.getAButton)
+        ).whileTrue(
+            self.sysid.quasistatic(SysIdRoutine.Direction.kForward)
+        )
+        Trigger(
+            lambda: _button_pressed(self.driver_controller.getBButton)
+        ).whileTrue(
+            self.sysid.quasistatic(SysIdRoutine.Direction.kReverse)
+        )
+        Trigger(
+            lambda: _button_pressed(self.driver_controller.getXButton)
+        ).whileTrue(
+            self.sysid.dynamic(SysIdRoutine.Direction.kForward)
+        )
+        Trigger(
+            lambda: _button_pressed(self.driver_controller.getYButton)
+        ).whileTrue(
+            self.sysid.dynamic(SysIdRoutine.Direction.kReverse)
         )
 
         # Tuning helpers: run these from SmartDashboard to tune one module's
@@ -80,7 +123,9 @@ class Robot(commands2.TimedCommandRobot):
             "Driver/Right Y", self.driver_controller.getRightY()
         )
         wpilib.SmartDashboard.putBoolean(
-            "Driver/A Button", self.driver_controller.getAButton()
+            "Driver/A Button",
+            self.driver_controller.isConnected()
+            and self.driver_controller.getAButton(),
         )
         
         wpilib.SmartDashboard.putNumber(

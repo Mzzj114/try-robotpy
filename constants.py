@@ -127,6 +127,26 @@ class VisionConstants:
     kVisionStdDevs = (0.7, 0.7, 9999999.0)
 
 
+class SysIdConstants:
+    """Drive SysId configuration for the swerve drivetrain.
+
+    The quasistatic test ramps voltage linearly. A 0.7 V/s ramp reaches 7 V
+    in 10 s (~3.0 m/s at the wheel) and travels roughly 14 m, which fits a
+    20 m runway with room to stop. Increase the ramp rate only if a longer
+    clear runway is available.
+    """
+
+    kMechanismName = "drive"
+
+    kRampRate = 0.7  # volts per second
+    kStepVoltage = 7.0  # volts, dynamic test
+    kTimeout = 10.0  # seconds, safety limit for each routine
+
+    # All four wheels must be straight and nearly stopped before a test.
+    kSteeringToleranceRadians = math.radians(5.0)
+    kMaxStartSpeedMetersPerSecond = 0.1
+
+
 class AutoConstants:
     """PathPlanner autonomous configuration."""
 

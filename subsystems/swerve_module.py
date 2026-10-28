@@ -152,6 +152,25 @@ class SwerveModule:
             rotations * (2.0 * math.pi) / ModuleConstants.kTurnCanCoderGearRatio
         )
 
+    def _apply_steering_target(
+        self, target_angle: Rotation2d, current_rotation: Rotation2d
+    ) -> None:
+        """Run the azimuth loop toward an encoder-frame target angle.
+
+        ``current_rotation`` and ``target_angle`` both include the module's
+        angular offset. Callers that already read the CANcoder pass it in to
+        avoid a second CAN read in the same loop.
+        """
+        turn_output = self._turn_pid.calculate(
+            current_rotation.radians(), target_angle.radians()
+        )
+        turn_feedforward = self._turn_feedforward.calculate(
+            self._turn_pid.getSetpoint().velocity
+        )
+        self._turn_voltage_command = turn_output + turn_feedforward
+        self._turn_motor.setVoltage(self._turn_voltage_command)
+        self._turn_target = target_angle
+
     def getState(self) -> SwerveModuleState:
         """Return the current module state (wheel speed and angle)."""
         return SwerveModuleState(
@@ -287,17 +306,52 @@ class SwerveModule:
 
         # The azimuth motor is voltage-driven; the roboRIO closes the loop on
         # the CANcoder and adds a profile-based feedforward.
-        turn_output = self._turn_pid.calculate(
-            current_rotation.radians(), target.angle.radians()
-        )
-        turn_feedforward = self._turn_feedforward.calculate(
-            self._turn_pid.getSetpoint().velocity
-        )
-        self._turn_voltage_command = turn_output + turn_feedforward
-        self._turn_motor.setVoltage(turn_output + turn_feedforward)
-
-        self._turn_target = target.angle
+        self._apply_steering_target(target.angle, current_rotation)
         self._desired_state = desired_state
+
+    def setDriveVoltage(self, voltage: float) -> None:
+        """Apply an open-loop voltage to the drive motor.
+
+        Used by SysId, which identifies the plant from voltage rather than the
+        normal velocity PID. Steering is controlled separately.
+        """
+        self._drive_voltage_command = voltage
+        self._drive_motor.setVoltage(voltage)
+
+    def setSteeringAngle(self, wheel_angle: Rotation2d) -> None:
+        """Hold the wheel at an absolute angle without touching drive output.
+
+        Unlike :meth:`setDesiredState`, this does not call ``optimize`` or
+        ``cosineScale``, so every module can be forced to the same true wheel
+        angle for a SysId test.
+        """
+        current_rotation = Rotation2d(self._get_turn_radians())
+        target_angle = wheel_angle + self._angular_offset
+        self._apply_steering_target(target_angle, current_rotation)
+        self._desired_state = SwerveModuleState(0.0, wheel_angle)
+
+    def getWheelAngle(self) -> Rotation2d:
+        """Return the true wheel angle with the module offset removed."""
+        return Rotation2d(self._get_turn_radians()) - self._angular_offset
+
+    def getDrivePosition(self) -> float:
+        """Return drive distance in meters for SysId logging."""
+        return self._drive_encoder.getPosition()
+
+    def getDriveVelocity(self) -> float:
+        """Return drive wheel speed in meters per second for SysId logging."""
+        return self._drive_encoder.getVelocity()
+
+    def getDriveAppliedVoltage(self) -> float:
+        """Return the approximate motor terminal voltage in volts."""
+        return (
+            self._drive_motor.getAppliedOutput()
+            * self._drive_motor.getBusVoltage()
+        )
+
+    def resetDriveController(self) -> None:
+        """Clear the drive velocity PID state before a SysId test."""
+        self._drive_pid.reset()
 
     def get_drive_motor(self) -> rev.SparkMax:
         """Return the drive Spark MAX for simulation access."""

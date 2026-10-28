@@ -16,6 +16,7 @@ import wpilib
 from pathplannerlib.auto import AutoBuilder
 from pathplannerlib.config import PIDConstants, RobotConfig
 from pathplannerlib.controller import PPHolonomicDriveController
+from wpilib.sysid import SysIdRoutineLog
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d
 from wpimath.kinematics import (
@@ -28,6 +29,7 @@ from constants import (
     AutoConstants,
     DriveConstants,
     ModuleConstants,
+    SysIdConstants,
     VisionConstants,
 )
 from subsystems.limelight import Limelight
@@ -39,6 +41,12 @@ class SwerveDrive(commands2.Subsystem):
 
     # Order matches DriveConstants.kModuleLocations.
     _module_names = ("Front Left", "Front Right", "Rear Left", "Rear Right")
+    _sysid_module_names = (
+        "front-left",
+        "front-right",
+        "rear-left",
+        "rear-right",
+    )
 
     def __init__(self) -> None:
         super().__init__()
@@ -364,6 +372,46 @@ class SwerveDrive(commands2.Subsystem):
         return DriveConstants.kDriveKinematics.toChassisSpeeds(
             self.getModuleStates()
         )
+
+    def setDriveVoltageForSysId(self, voltage: float) -> None:
+        """Apply one open-loop drive voltage while holding wheels straight."""
+        # Keep telemetry/physics from acting on a stale teleop command.
+        self._desired_chassis_speeds = ChassisSpeeds()
+        for module in self._modules:
+            module.setSteeringAngle(Rotation2d())
+            module.setDriveVoltage(voltage)
+
+    def holdWheelsForSysId(self) -> None:
+        """Keep the drive stopped while the steering loops align the wheels."""
+        self.setDriveVoltageForSysId(0.0)
+
+    def resetDriveControllers(self) -> None:
+        """Clear drive PID state before starting a SysId test."""
+        for module in self._modules:
+            module.resetDriveController()
+
+    def isDriveSysIdReady(self) -> bool:
+        """Return True when all wheels are straight and nearly stopped."""
+        return all(
+            abs(module.getWheelAngle().radians())
+            <= SysIdConstants.kSteeringToleranceRadians
+            and abs(module.getDriveVelocity())
+            <= SysIdConstants.kMaxStartSpeedMetersPerSecond
+            for module in self._modules
+        )
+
+    def logDriveSysId(self, log: SysIdRoutineLog) -> None:
+        """Log each drive module's voltage, distance, and speed for SysId."""
+        for name, module in zip(
+            self._sysid_module_names, self._modules
+        ):
+            log.motor(name).voltage(
+                module.getDriveAppliedVoltage()
+            ).position(
+                module.getDrivePosition()
+            ).velocity(
+                module.getDriveVelocity()
+            )
 
     def setX(self) -> None:
         """Park the modules in an X orientation to resist pushing."""

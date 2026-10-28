@@ -232,3 +232,7 @@ recordings/
 # frc / robotics
 simgui*
 ctre_sim/
+
+# WPILib data logs
+logs/
+*.wpilog
