@@ -42,7 +42,7 @@ class DriveConstants:
     kDriveKinematics = SwerveDrive4Kinematics(*kModuleLocations)
 
     # Driver-oriented speed limits.
-    kMaxSpeedMetersPerSecond = 2.8
+    kMaxSpeedMetersPerSecond = 2.0
     kMaxAngularSpeed = 2.0 * math.pi  # rad/s
     kModuleMaxAngularAcceleration = 6.0 * math.pi  # rad/s^2, for the steering profile
 
@@ -80,6 +80,7 @@ class ModuleConstants:
 
     # Drive motor velocity loop gains. The loop now runs on the roboRIO and
     # outputs a voltage, so it needs a feedforward (S/V/A) in addition to PID.
+    kDriveP = 1.0
     kDriveI = 0.0
     kDriveD = 0.0
     kDriveS = 0.154     # volts
