@@ -80,13 +80,11 @@ class ModuleConstants:
 
     # Drive motor velocity loop gains. The loop now runs on the roboRIO and
     # outputs a voltage, so it needs a feedforward (S/V/A) in addition to PID.
-    # These are starting guesses and must be tuned on the real robot.
-    kDriveP = 0.1
-    kDriveI = 0.01
+    kDriveI = 0.0
     kDriveD = 0.0
-    kDriveS = 0.3337     # volts
-    kDriveV = 1.22     # volt-seconds per meter
-    kDriveA = 0.13     # volt-seconds^2 per meter
+    kDriveS = 0.154     # volts
+    kDriveV = 2.550     # volt-seconds per meter
+    kDriveA = 0.456     # volt-seconds^2 per meter
 
     # Azimuth steering PID gains and feedforward, carried over from last
     # year's Java swerve that steered correctly.
