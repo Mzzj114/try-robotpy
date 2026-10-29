@@ -10,6 +10,8 @@ References:
 - NavX Python API: https://robotpy.readthedocs.io/projects/navx/en/stable/api.html
 """
 
+from dataclasses import dataclass
+
 import commands2
 import navx
 import wpilib
@@ -34,6 +36,19 @@ from constants import (
 )
 from subsystems.limelight import Limelight
 from subsystems.swerve_module import SwerveModule
+
+
+@dataclass
+class _VisionTelemetry:
+    """Latest vision snapshot, published separately from the control loop."""
+
+    connected: bool = False
+    tag_count: int = 0
+    accepted: bool = False
+    status: str = "NO CAMERA"
+    pose: Pose2d | None = None
+    latency_ms: float = 0.0
+    avg_tag_distance: float = 0.0
 
 
 class SwerveDrive(commands2.Subsystem):
@@ -100,6 +115,9 @@ class SwerveDrive(commands2.Subsystem):
         )
         self._last_vision_source_us = [0] * len(self._limelights)
         self._vision_accepted_counts = [0] * len(self._limelights)
+        self._vision_telemetry = [
+            _VisionTelemetry() for _ in self._limelights
+        ]
 
         self._field = wpilib.Field2d()
         wpilib.SmartDashboard.putData("Field", self._field)
@@ -141,15 +159,24 @@ class SwerveDrive(commands2.Subsystem):
         )
 
     def periodic(self) -> None:
-        """Update the pose estimate and publish telemetry every loop."""
+        """Update odometry and vision at the full loop rate."""
+        # One CANcoder read per module per loop; control and telemetry reuse it.
+        for module in self._modules:
+            module.refreshTurnPosition()
+
         self._pose_estimator.update(
             self.getRotation2d(),
             self._modulePositions(),
         )
         self._update_vision()
 
+        # Field visualization is cheap and stays in the control loop; the
+        # dashboard number telemetry runs separately at 10/1 Hz.
+        self._field.setRobotPose(self.getPose())
+
+    def publishTelemetry(self) -> None:
+        """Publish swerve and vision dashboard data at a reduced rate."""
         pose = self.getPose()
-        self._field.setRobotPose(pose)
 
         # Estimator result (odometry fused with MegaTag2 measurements).
         wpilib.SmartDashboard.putNumber(
@@ -169,6 +196,17 @@ class SwerveDrive(commands2.Subsystem):
             "Swerve/Pose Theta", pose.rotation().degrees()
         )
 
+        desired = self._desired_chassis_speeds
+        wpilib.SmartDashboard.putNumber(
+            "Swerve/Chassis Speeds/vx (m/s)", desired.vx
+        )
+        wpilib.SmartDashboard.putNumber(
+            "Swerve/Chassis Speeds/vy (m/s)", desired.vy
+        )
+        wpilib.SmartDashboard.putNumber(
+            "Swerve/Chassis Speeds/omega (deg/s)", desired.omega_dps
+        )
+
         # Battery voltage confirms the bus is healthy while testing motors.
         wpilib.SmartDashboard.putNumber(
             "Diagnostics/Battery Voltage (V)",
@@ -179,6 +217,13 @@ class SwerveDrive(commands2.Subsystem):
         # verify the azimuth motors are actually steering the modules.
         for name, module in zip(self._module_names, self._modules):
             module.publishTelemetry(f"Swerve/{name}")
+
+        self._publish_vision_telemetry()
+
+    def publishSlowTelemetry(self) -> None:
+        """Publish controller identity and fault data at a low rate."""
+        for name, module in zip(self._module_names, self._modules):
+            module.publishSlowTelemetry(f"Swerve/{name}")
 
     def _update_vision(self) -> None:
         """Send the gyro heading to each camera and fuse new MegaTag2 frames."""
@@ -222,39 +267,64 @@ class SwerveDrive(commands2.Subsystem):
                         accepted = True
                         status = "ACCEPTED"
 
+            telemetry = self._vision_telemetry[index]
+            telemetry.connected = connected
+            telemetry.tag_count = tag_count
+            telemetry.accepted = accepted
+            telemetry.status = status
+            telemetry.pose = estimate.pose if estimate is not None else None
+            telemetry.latency_ms = (
+                estimate.latency_seconds * 1000.0
+                if estimate is not None
+                else 0.0
+            )
+            telemetry.avg_tag_distance = (
+                estimate.avg_tag_distance if estimate is not None else 0.0
+            )
+
+    def _publish_vision_telemetry(self) -> None:
+        """Publish the latest vision snapshots from ``_update_vision``."""
+        for index, (camera, telemetry) in enumerate(
+            zip(self._limelights, self._vision_telemetry)
+        ):
             prefix = f"Vision/{camera.table_name}"
-            wpilib.SmartDashboard.putBoolean(f"{prefix}/Connected", connected)
+            wpilib.SmartDashboard.putBoolean(
+                f"{prefix}/Connected", telemetry.connected
+            )
             wpilib.SmartDashboard.putBoolean(
                 f"{prefix}/Has Target", camera.has_target()
             )
-            wpilib.SmartDashboard.putNumber(f"{prefix}/Tag Count", tag_count)
+            wpilib.SmartDashboard.putNumber(
+                f"{prefix}/Tag Count", telemetry.tag_count
+            )
             wpilib.SmartDashboard.putBoolean(
-                f"{prefix}/Frame Accepted", accepted
+                f"{prefix}/Frame Accepted", telemetry.accepted
+            )
+            wpilib.SmartDashboard.putString(
+                f"{prefix}/Status", telemetry.status
             )
             wpilib.SmartDashboard.putNumber(
                 f"{prefix}/Accepted Measurements",
                 self._vision_accepted_counts[index],
             )
-            wpilib.SmartDashboard.putString(f"{prefix}/Status", status)
 
-            if estimate is not None:
+            if telemetry.pose is not None:
                 wpilib.SmartDashboard.putNumber(
-                    f"{prefix}/Pose X (m)", estimate.pose.x
+                    f"{prefix}/Pose X (m)", telemetry.pose.x
                 )
                 wpilib.SmartDashboard.putNumber(
-                    f"{prefix}/Pose Y (m)", estimate.pose.y
+                    f"{prefix}/Pose Y (m)", telemetry.pose.y
                 )
                 wpilib.SmartDashboard.putNumber(
                     f"{prefix}/Pose Theta (deg)",
-                    estimate.pose.rotation().degrees(),
+                    telemetry.pose.rotation().degrees(),
                 )
                 wpilib.SmartDashboard.putNumber(
-                    f"{prefix}/Latency (ms)",
-                    estimate.latency_seconds * 1000.0,
+                    f"{prefix}/Latency (ms)", telemetry.latency_ms
                 )
                 wpilib.SmartDashboard.putNumber(
                     f"{prefix}/Avg Tag Distance (m)",
-                    estimate.avg_tag_distance,
+                    telemetry.avg_tag_distance,
                 )
 
         wpilib.SmartDashboard.putNumber(
@@ -334,10 +404,6 @@ class SwerveDrive(commands2.Subsystem):
     def driveRobotRelative(self, chassis_speeds: ChassisSpeeds) -> None:
         """Command the modules directly from a ChassisSpeeds object."""
         self._desired_chassis_speeds = chassis_speeds
-
-        wpilib.SmartDashboard.putNumber("Swerve/Chassis Speeds/vx (m/s)", chassis_speeds.vx)
-        wpilib.SmartDashboard.putNumber("Swerve/Chassis Speeds/vy (m/s)", chassis_speeds.vy)
-        wpilib.SmartDashboard.putNumber("Swerve/Chassis Speeds/omega (deg/s)", chassis_speeds.omega_dps)
 
         module_states = DriveConstants.kDriveKinematics.toSwerveModuleStates(
             chassis_speeds

@@ -144,13 +144,25 @@ class SwerveModule:
         self._turn_voltage_command = 0.0
         self._drive_voltage_command = 0.0
 
-    def _get_turn_radians(self) -> float:
-        """Read the CANcoder azimuth in radians, including the offset."""
+        # Cached once per robot loop so control and telemetry share one read.
+        self._turn_radians = 0.0
+        self._turn_radians_valid = False
+
+    def refreshTurnPosition(self) -> float:
+        """Refresh and cache the CANcoder azimuth in radians."""
         self._turn_position_signal.refresh()
         rotations = self._turn_position_signal.value
-        return (
+        self._turn_radians = (
             rotations * (2.0 * math.pi) / ModuleConstants.kTurnCanCoderGearRatio
         )
+        self._turn_radians_valid = True
+        return self._turn_radians
+
+    def _get_turn_radians(self) -> float:
+        """Return the cached azimuth, refreshing if it was never read."""
+        if not self._turn_radians_valid:
+            return self.refreshTurnPosition()
+        return self._turn_radians
 
     def _apply_steering_target(
         self, target_angle: Rotation2d, current_rotation: Rotation2d
@@ -194,7 +206,7 @@ class SwerveModule:
 
         :param prefix: SmartDashboard key prefix, e.g. ``Swerve/Front Left``.
         """
-        # Read the CANcoder once per publish to avoid redundant CAN traffic.
+        # Use the CANcoder value refreshed once at the start of this loop.
         turn_radians = self._get_turn_radians()
         turn_rotation = Rotation2d(turn_radians)
         desired = self._turn_target - self._angular_offset
@@ -248,6 +260,21 @@ class SwerveModule:
             f"{prefix}/Drive Current (A)", self._drive_motor.getOutputCurrent()
         )
 
+        # A CANcoder with a bad magnet or dropped bus breaks steering.
+        self._magnet_health_signal.refresh()
+        wpilib.SmartDashboard.putBoolean(
+            f"{prefix}/CANcoder Connected", self._can_coder.is_connected
+        )
+        wpilib.SmartDashboard.putString(
+            f"{prefix}/CANcoder Magnet Health",
+            str(self._magnet_health_signal.value),
+        )
+
+    def publishSlowTelemetry(self, prefix: str) -> None:
+        """Publish identity and fault data; call this at a low rate.
+
+        :param prefix: SmartDashboard key prefix, e.g. ``Swerve/Front Left``.
+        """
         # Identity and faults. Empty firmware or serial 0 means the controller
         # is not on the CAN bus.
         wpilib.SmartDashboard.putString(
@@ -268,16 +295,6 @@ class SwerveModule:
         wpilib.SmartDashboard.putNumber(
             f"{prefix}/Turn Sticky Fault Bits",
             float(self._turn_motor.getStickyFaults().rawBits),
-        )
-
-        # A CANcoder with a bad magnet or dropped bus breaks steering.
-        self._magnet_health_signal.refresh()
-        wpilib.SmartDashboard.putBoolean(
-            f"{prefix}/CANcoder Connected", self._can_coder.is_connected
-        )
-        wpilib.SmartDashboard.putString(
-            f"{prefix}/CANcoder Magnet Health",
-            str(self._magnet_health_signal.value),
         )
 
     def setDesiredState(self, desired_state: SwerveModuleState) -> None:

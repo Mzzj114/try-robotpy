@@ -30,6 +30,12 @@ class Robot(commands2.TimedCommandRobot):
         )
 
         self.swerve = SwerveDrive()
+
+        # Run dashboard telemetry at 10/1 Hz instead of every 20 ms loop.
+        # Odometry and control still run at the full loop rate.
+        self.addPeriodic(self.swerve.publishTelemetry, 0.1)
+        self.addPeriodic(self.swerve.publishSlowTelemetry, 1.0, 0.05)
+
         self.driver_controller = wpilib.XboxController(
             OIConstants.kDriverControllerPort
         )
