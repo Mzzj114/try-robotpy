@@ -20,6 +20,7 @@ import wpilib
 from phoenix6.configs import CANcoderConfiguration, MagnetSensorConfigs
 from phoenix6.hardware import CANcoder
 from phoenix6.signals import SensorDirectionValue
+from phoenix6.status_signal import BaseStatusSignal
 from wpimath.controller import (
     PIDController,
     ProfiledPIDControllerRadians,
@@ -95,6 +96,10 @@ class SwerveModule:
         # ---- Azimuth absolute encoder (CANcoder) ----
         self._can_coder = CANcoder(can_coder_id)
         self._turn_position_signal = self._can_coder.get_absolute_position()
+        # Relative position is continuous across multiple revolutions, which
+        # SysId needs for a usable velocity/acceleration fit.
+        self._turn_relative_position_signal = self._can_coder.get_position()
+        self._turn_velocity_signal = self._can_coder.get_velocity()
         self._magnet_health_signal = self._can_coder.get_magnet_health()
 
         # Steering profiled PID + feedforward runs on the roboRIO because the
@@ -146,14 +151,34 @@ class SwerveModule:
 
         # Cached once per robot loop so control and telemetry share one read.
         self._turn_radians = 0.0
+        # Continuous azimuth position/velocity in module rotations and
+        # rotations per second, used by the steering SysId routine.
+        self._turn_turns = 0.0
+        self._turn_turns_per_second = 0.0
         self._turn_radians_valid = False
 
     def refreshTurnPosition(self) -> float:
-        """Refresh and cache the CANcoder azimuth in radians."""
+        """Refresh and cache the CANcoder azimuth position and velocity."""
+        # Keep the blocking read the steering loop already relied on.
         self._turn_position_signal.refresh()
+        # The extra SysId signals are refreshed together and non-blocking.
+        BaseStatusSignal.refresh_all(
+            self._turn_relative_position_signal,
+            self._turn_velocity_signal,
+        )
         rotations = self._turn_position_signal.value
         self._turn_radians = (
             rotations * (2.0 * math.pi) / ModuleConstants.kTurnCanCoderGearRatio
+        )
+        # Relative position accumulates past one revolution, unlike the
+        # absolute position, so it is safe to differentiate for SysId.
+        self._turn_turns = (
+            self._turn_relative_position_signal.value
+            / ModuleConstants.kTurnCanCoderGearRatio
+        )
+        self._turn_turns_per_second = (
+            self._turn_velocity_signal.value
+            / ModuleConstants.kTurnCanCoderGearRatio
         )
         self._turn_radians_valid = True
         return self._turn_radians
@@ -329,46 +354,39 @@ class SwerveModule:
     def setDriveVoltage(self, voltage: float) -> None:
         """Apply an open-loop voltage to the drive motor.
 
-        Used by SysId, which identifies the plant from voltage rather than the
-        normal velocity PID. Steering is controlled separately.
+        The steering SysId routine uses this to hold the drive wheels at zero
+        while the azimuth motors are characterized.
         """
         self._drive_voltage_command = voltage
         self._drive_motor.setVoltage(voltage)
 
-    def setSteeringAngle(self, wheel_angle: Rotation2d) -> None:
-        """Hold the wheel at an absolute angle without touching drive output.
-
-        Unlike :meth:`setDesiredState`, this does not call ``optimize`` or
-        ``cosineScale``, so every module can be forced to the same true wheel
-        angle for a SysId test.
-        """
-        current_rotation = Rotation2d(self._get_turn_radians())
-        target_angle = wheel_angle + self._angular_offset
-        self._apply_steering_target(target_angle, current_rotation)
-        self._desired_state = SwerveModuleState(0.0, wheel_angle)
-
-    def getWheelAngle(self) -> Rotation2d:
-        """Return the true wheel angle with the module offset removed."""
-        return Rotation2d(self._get_turn_radians()) - self._angular_offset
-
-    def getDrivePosition(self) -> float:
-        """Return drive distance in meters for SysId logging."""
-        return self._drive_encoder.getPosition()
-
     def getDriveVelocity(self) -> float:
-        """Return drive wheel speed in meters per second for SysId logging."""
+        """Return drive wheel speed in meters per second."""
         return self._drive_encoder.getVelocity()
 
-    def getDriveAppliedVoltage(self) -> float:
-        """Return the approximate motor terminal voltage in volts."""
-        return (
-            self._drive_motor.getAppliedOutput()
-            * self._drive_motor.getBusVoltage()
-        )
+    def setSteeringVoltage(self, voltage: float) -> None:
+        """Apply an open-loop voltage to the azimuth motor.
 
-    def resetDriveController(self) -> None:
-        """Clear the drive velocity PID state before a SysId test."""
-        self._drive_pid.reset()
+        Used by SysId, which identifies the steering plant from voltage rather
+        than the normal position PID.
+        """
+        self._turn_voltage_command = voltage
+        self._turn_motor.setVoltage(voltage)
+
+    def getSteeringPositionTurns(self) -> float:
+        """Return the continuous azimuth angle in module rotations."""
+        return self._turn_turns
+
+    def getSteeringVelocityTurnsPerSecond(self) -> float:
+        """Return the azimuth angular speed in module rotations per second."""
+        return self._turn_turns_per_second
+
+    def getSteeringAppliedVoltage(self) -> float:
+        """Return the approximate azimuth motor terminal voltage in volts."""
+        return (
+            self._turn_motor.getAppliedOutput()
+            * self._turn_motor.getBusVoltage()
+        )
 
     def get_drive_motor(self) -> rev.SparkMax:
         """Return the drive Spark MAX for simulation access."""

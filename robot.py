@@ -11,7 +11,7 @@ from pathplannerlib.auto import PathPlannerAuto
 
 from commands.module_test import ModuleTestCommand
 from commands.swerve_drive import SwerveDriveCommand
-from commands.sysid import SysIdCommands
+from commands.sysid import SteeringSysIdCommands
 from commands.tune_pid import TuneDrivePID, TuneTurnPID
 from constants import AutoConstants, OIConstants
 from debug_console import DebugConsole
@@ -39,7 +39,7 @@ class Robot(commands2.TimedCommandRobot):
         self.driver_controller = wpilib.XboxController(
             OIConstants.kDriverControllerPort
         )
-        self.sysid = SysIdCommands(self.swerve)
+        self.steering_sysid = SteeringSysIdCommands(self.swerve)
 
         # Load the auto once at startup so the autonomous period does not pay
         # the file-parsing cost. AutoBuilder is configured by SwerveDrive.
@@ -57,10 +57,10 @@ class Robot(commands2.TimedCommandRobot):
             )
         )
 
-        # SysId drive characterization. These are test-only bindings; the
-        # command runs only while the button is held and releasing it stops
-        # the drive. Hold quasistatic tests for the full ramp, but release
-        # dynamic tests after about 2 s to stay inside a short runway.
+        # Steering SysId. These are test-only bindings: the command runs only
+        # while the button is held and releasing it stops the motors. Put the
+        # robot on blocks first: the azimuth modules must pivot freely, and
+        # they have no hard stop. Release early if a cable starts to twist.
         def _button_pressed(read_button: Callable[[], bool]) -> bool:
             """Avoid HAL warnings when no controller is plugged in."""
             return self.driver_controller.isConnected() and read_button()
@@ -68,22 +68,26 @@ class Robot(commands2.TimedCommandRobot):
         Trigger(
             lambda: _button_pressed(self.driver_controller.getAButton)
         ).whileTrue(
-            self.sysid.quasistatic(SysIdRoutine.Direction.kForward)
+            self.steering_sysid.quasistatic(
+                SysIdRoutine.Direction.kForward
+            )
         )
         Trigger(
             lambda: _button_pressed(self.driver_controller.getBButton)
         ).whileTrue(
-            self.sysid.quasistatic(SysIdRoutine.Direction.kReverse)
+            self.steering_sysid.quasistatic(
+                SysIdRoutine.Direction.kReverse
+            )
         )
         Trigger(
             lambda: _button_pressed(self.driver_controller.getXButton)
         ).whileTrue(
-            self.sysid.dynamic(SysIdRoutine.Direction.kForward)
+            self.steering_sysid.dynamic(SysIdRoutine.Direction.kForward)
         )
         Trigger(
             lambda: _button_pressed(self.driver_controller.getYButton)
         ).whileTrue(
-            self.sysid.dynamic(SysIdRoutine.Direction.kReverse)
+            self.steering_sysid.dynamic(SysIdRoutine.Direction.kReverse)
         )
 
         # Tuning helpers: run these from SmartDashboard to tune one module's

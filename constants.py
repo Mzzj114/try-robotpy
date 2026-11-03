@@ -89,12 +89,12 @@ class ModuleConstants:
 
     # Azimuth steering PID gains and feedforward, carried over from last
     # year's Java swerve that steered correctly.
-    kTurnP = 0.95
+    kTurnP = 2.0
     kTurnI = 0.0
-    kTurnD = 0.25
-    kTurnS = 0.8    # volts
-    kTurnV = 0.41   # volt-seconds per radian
-    kTurnA = 0.01   # volt-seconds^2 per radian
+    kTurnD = 0.0
+    kTurnS = 0.105    # volts
+    kTurnV = 2.327  # volt-seconds per radian
+    kTurnA = 0.0   # volt-seconds^2 per radian
 
     # Current limits.
     kDriveCurrentLimit = 50  # amps
@@ -126,24 +126,31 @@ class VisionConstants:
     kVisionStdDevs = (0.7, 0.7, 9999999.0)
 
 
-class SysIdConstants:
-    """Drive SysId configuration for the swerve drivetrain.
+class SteeringSysIdConstants:
+    """Steering (azimuth) SysId configuration.
 
-    The quasistatic test ramps voltage linearly. A 0.7 V/s ramp reaches 7 V
-    in 10 s (~3.0 m/s at the wheel) and travels roughly 14 m, which fits a
-    20 m runway with room to stop. Increase the ramp rate only if a longer
-    clear runway is available.
+    Run these tests with the robot on blocks: the wheels must be off the
+    ground so the modules can pivot without tire scrub. A 21.43:1 NEO 550 can
+    spin a module very fast, and there is no hard stop, so both tests are
+    deliberately short. Each forward/reverse pair roughly unwinds the module,
+    keeping cable twist to about one to two revolutions per test.
     """
 
-    kMechanismName = "drive"
+    kMechanismName = "steering"
 
-    kRampRate = 0.7  # volts per second
-    kStepVoltage = 7.0  # volts, dynamic test
-    kTimeout = 10.0  # seconds, safety limit for each routine
+    # Conservative ramp and step; see the class docstring for why.
+    kRampRate = 0.6  # volts per second
+    kStepVoltage = 2.0  # volts, dynamic test
+    kTimeout = 5.0  # seconds, backstop for either routine
 
-    # All four wheels must be straight and nearly stopped before a test.
-    kSteeringToleranceRadians = math.radians(5.0)
-    kMaxStartSpeedMetersPerSecond = 0.1
+    # Per-test limits; the shorter of these and kTimeout wins.
+    kQuasistaticDuration = 3.0  # seconds, reaches about 1.8 V
+    kDynamicDuration = 1.5  # seconds
+
+    # A test may start only when the drive wheels and steering axes are
+    # essentially stationary.
+    kMaxStartDriveSpeedMetersPerSecond = 0.1
+    kMaxStartSteeringSpeedTurnsPerSecond = 0.1
 
 
 class AutoConstants:

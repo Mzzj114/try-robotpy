@@ -31,7 +31,7 @@ from constants import (
     AutoConstants,
     DriveConstants,
     ModuleConstants,
-    SysIdConstants,
+    SteeringSysIdConstants,
     VisionConstants,
 )
 from subsystems.limelight import Limelight
@@ -439,44 +439,47 @@ class SwerveDrive(commands2.Subsystem):
             self.getModuleStates()
         )
 
-    def setDriveVoltageForSysId(self, voltage: float) -> None:
-        """Apply one open-loop drive voltage while holding wheels straight."""
+    def setSteeringVoltageForSysId(self, voltage: float) -> None:
+        """Apply one open-loop steering voltage with the drive wheels stopped.
+
+        All four azimuth motors receive the same voltage so one log entry per
+        module is enough for the analyzer.
+        """
         # Keep telemetry/physics from acting on a stale teleop command.
         self._desired_chassis_speeds = ChassisSpeeds()
         for module in self._modules:
-            module.setSteeringAngle(Rotation2d())
-            module.setDriveVoltage(voltage)
+            module.setDriveVoltage(0.0)
+            module.setSteeringVoltage(voltage)
 
-    def holdWheelsForSysId(self) -> None:
-        """Keep the drive stopped while the steering loops align the wheels."""
-        self.setDriveVoltageForSysId(0.0)
+    def stopForSteeringSysId(self) -> None:
+        """Hold drive and steering at zero while a steering test prepares."""
+        self.setSteeringVoltageForSysId(0.0)
 
-    def resetDriveControllers(self) -> None:
-        """Clear drive PID state before starting a SysId test."""
-        for module in self._modules:
-            module.resetDriveController()
-
-    def isDriveSysIdReady(self) -> bool:
-        """Return True when all wheels are straight and nearly stopped."""
+    def isSteeringSysIdReady(self) -> bool:
+        """Return True when the drive wheels and steering axes are stopped."""
         return all(
-            abs(module.getWheelAngle().radians())
-            <= SysIdConstants.kSteeringToleranceRadians
-            and abs(module.getDriveVelocity())
-            <= SysIdConstants.kMaxStartSpeedMetersPerSecond
+            abs(module.getDriveVelocity())
+            <= SteeringSysIdConstants.kMaxStartDriveSpeedMetersPerSecond
+            and abs(module.getSteeringVelocityTurnsPerSecond())
+            <= SteeringSysIdConstants.kMaxStartSteeringSpeedTurnsPerSecond
             for module in self._modules
         )
 
-    def logDriveSysId(self, log: SysIdRoutineLog) -> None:
-        """Log each drive module's voltage, distance, and speed for SysId."""
+    def logSteeringSysId(self, log: SysIdRoutineLog) -> None:
+        """Log each steering module's voltage, angle, and speed for SysId.
+
+        Angular units are rotations and rotations per second, so the analyzer
+        can convert to radians (or the gains can be divided by 2*pi).
+        """
         for name, module in zip(
             self._sysid_module_names, self._modules
         ):
             log.motor(name).voltage(
-                module.getDriveAppliedVoltage()
-            ).position(
-                module.getDrivePosition()
-            ).velocity(
-                module.getDriveVelocity()
+                module.getSteeringAppliedVoltage()
+            ).angularPosition(
+                module.getSteeringPositionTurns()
+            ).angularVelocity(
+                module.getSteeringVelocityTurnsPerSecond()
             )
 
     def setX(self) -> None:
