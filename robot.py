@@ -12,7 +12,7 @@ from pathplannerlib.auto import PathPlannerAuto
 from commands.module_test import ModuleTestCommand
 from commands.swerve_drive import SwerveDriveCommand
 from commands.sysid import SteeringSysIdCommands
-from commands.tune_pid import TuneDrivePID, TuneTurnPID
+from commands.tune_pid import TuneDrivePID, TuneTurnFF, TuneTurnPID
 from constants import AutoConstants, OIConstants
 from debug_console import DebugConsole
 from subsystems.swerve_drive import SwerveDrive
@@ -97,6 +97,9 @@ class Robot(commands2.TimedCommandRobot):
         )
         wpilib.SmartDashboard.putData(
             "Tune/Tune Turn PID", TuneTurnPID(self.swerve)
+        )
+        wpilib.SmartDashboard.putData(
+            "Tune/Tune Turn FF", TuneTurnFF(self.swerve)
         )
 
         # Manual single-module test: type a speed (m/s) and angle (deg) in

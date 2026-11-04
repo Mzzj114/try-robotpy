@@ -404,6 +404,10 @@ class SwerveModule:
         """Return the roboRIO steering PID for live tuning."""
         return self._turn_pid
 
+    def get_turn_feedforward(self) -> SimpleMotorFeedforwardRadians:
+        """Return the roboRIO steering feedforward for live tuning."""
+        return self._turn_feedforward
+
     def get_can_coder(self) -> CANcoder:
         """Return the azimuth CANcoder for simulation access."""
         return self._can_coder

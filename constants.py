@@ -43,8 +43,8 @@ class DriveConstants:
 
     # Driver-oriented speed limits.
     kMaxSpeedMetersPerSecond = 2.0
-    kMaxAngularSpeed = 2.0 * math.pi  # rad/s
-    kModuleMaxAngularAcceleration = 6.0 * math.pi  # rad/s^2, for the steering profile
+    kMaxAngularSpeed = 1.0 * math.pi  # rad/s
+    kModuleMaxAngularAcceleration = 2.0 * math.pi  # rad/s^2, for the steering profile
 
     # Slew rate limiters for teleop (optional smoothing).
     kDirectionSlewRate = 1.2  # rad/s
@@ -89,11 +89,11 @@ class ModuleConstants:
 
     # Azimuth steering PID gains and feedforward, carried over from last
     # year's Java swerve that steered correctly.
-    kTurnP = 2.0
+    kTurnP = 2.1
     kTurnI = 0.0
     kTurnD = 0.0
-    kTurnS = 0.105    # volts
-    kTurnV = 2.327  # volt-seconds per radian
+    kTurnS = 0.09    # volts
+    kTurnV = 0.37035  # volt-seconds per radian
     kTurnA = 0.0   # volt-seconds^2 per radian
 
     # Current limits.
@@ -139,8 +139,8 @@ class SteeringSysIdConstants:
     kMechanismName = "steering"
 
     # Conservative ramp and step; see the class docstring for why.
-    kRampRate = 0.6  # volts per second
-    kStepVoltage = 2.0  # volts, dynamic test
+    kRampRate = 0.7  # volts per second
+    kStepVoltage = 7.0  # volts, dynamic test
     kTimeout = 5.0  # seconds, backstop for either routine
 
     # Per-test limits; the shorter of these and kTimeout wins.
@@ -161,10 +161,10 @@ class AutoConstants:
 
     # Holonomic path-following gains. Translation is in meters per second,
     # rotation in radians per second. Start P-only and tune on the real robot.
-    kTranslationP = 5.0
+    kTranslationP = 2.0
     kTranslationI = 0.0
-    kTranslationD = 2.0
-    kRotationP = 5.0
+    kTranslationD = 1.0
+    kRotationP = 2.0
     kRotationI = 0.0
     kRotationD = 0.0
 

@@ -3,14 +3,17 @@
 Ported from last year's Java repo
 (``2026-FRC-robot/src/main/java/frc/robot/commands/tunePID``).
 
-Each command drives a step response on the front-left module and lets the
-operator edit the P/I/D gains from SmartDashboard while it runs. Gains are
-pushed to the roboRIO controllers live, so the step response can be watched
-without redeploying.
+Each PID command drives a step response on the front-left module and lets the
+operator edit the P/I/D gains from SmartDashboard while it runs. ``TuneTurnFF``
+instead drives a velocity triangle wave open-loop so the S/V/A feedforward can
+be tuned. Gains are pushed to the roboRIO controllers live, so the response can
+be watched without redeploying.
 
 Run them from SmartDashboard under ``Tune/``; they require the swerve
 subsystem, so the default teleop command is interrupted while tuning.
 """
+
+import math
 
 import commands2
 import wpilib
@@ -172,4 +175,113 @@ class TuneTurnPID(commands2.Command):
 
     def end(self, interrupted: bool) -> None:
         """Stop the chassis when tuning ends."""
+        self._swerve.stop()
+
+
+class TuneTurnFF(commands2.Command):
+    """Tune the steering feedforward (S/V/A) live.
+
+    Unlike :class:`TuneTurnPID`, this bypasses the position PID and drives the
+    azimuth motor open-loop from the feedforward alone. The velocity setpoint
+    is a triangle wave, so the S, V, and A terms are all exercised: adjust the
+    gains until the measured velocity tracks the target with the smallest
+    error.
+    """
+
+    _KEY_S = "PID/Turn FF/Tune S"
+    _KEY_V = "PID/Turn FF/Tune V"
+    _KEY_A = "PID/Turn FF/Tune A"
+    _KEY_AMPLITUDE = "PID/Turn FF/Amplitude (rad/s)"
+    _KEY_TARGET = "PID/Turn FF/Target Velocity"
+    _KEY_ACTUAL = "PID/Turn FF/Actual Velocity"
+    _KEY_ERROR = "PID/Turn FF/Velocity Error"
+    _KEY_VOLTAGE = "PID/Turn FF/Commanded Voltage"
+
+    _AMPLITUDE = 1.0  # rad/s peak of the velocity triangle wave
+    _HALF_PERIOD = 2.0  # s to swing from one peak to the other
+
+    def __init__(self, swerve: SwerveDrive) -> None:
+        """Construct the steering feedforward tuning command.
+
+        :param swerve: The swerve drivetrain subsystem to tune.
+        """
+        super().__init__()
+        self._swerve = swerve
+        self._module = swerve.getModules()[0]
+        self._feedforward = self._module.get_turn_feedforward()
+        self._timer = wpilib.Timer()
+
+        self._kS = self._feedforward.getKs()
+        self._kV = self._feedforward.getKv()
+        self._kA = self._feedforward.getKa()
+
+        wpilib.SmartDashboard.putNumber(self._KEY_S, self._kS)
+        wpilib.SmartDashboard.putNumber(self._KEY_V, self._kV)
+        wpilib.SmartDashboard.putNumber(self._KEY_A, self._kA)
+        wpilib.SmartDashboard.putNumber(self._KEY_AMPLITUDE, self._AMPLITUDE)
+        wpilib.SmartDashboard.putNumber(self._KEY_TARGET, 0.0)
+
+        print(f"[TuneTurnFF] Initial feedforward is {self._kS} {self._kV} {self._kA}")
+
+        self.addRequirements(swerve)
+
+    def initialize(self) -> None:
+        """Restart the velocity-profile timer."""
+        self._timer.restart()
+
+    def execute(self) -> None:
+        """Apply any edited gains, then command the next velocity setpoint."""
+        kS = wpilib.SmartDashboard.getNumber(self._KEY_S, self._kS)
+        kV = wpilib.SmartDashboard.getNumber(self._KEY_V, self._kV)
+        kA = wpilib.SmartDashboard.getNumber(self._KEY_A, self._kA)
+
+        if (kS, kV, kA) != (self._kS, self._kV, self._kA):
+            self._kS, self._kV, self._kA = kS, kV, kA
+            self._feedforward.setKs(kS)
+            self._feedforward.setKv(kV)
+            self._feedforward.setKa(kA)
+            print(f"[TuneTurnFF] Updated feedforward to: {kS} {kV} {kA}")
+
+        amplitude = wpilib.SmartDashboard.getNumber(
+            self._KEY_AMPLITUDE, self._AMPLITUDE
+        )
+        if amplitude == 0.0:
+            amplitude = self._AMPLITUDE
+
+        # Triangle wave: -amplitude -> +amplitude -> -amplitude. The velocity
+        # ramps at a constant rate, which is what the A term responds to.
+        t = self._timer.get() % (2.0 * self._HALF_PERIOD)
+        if t < self._HALF_PERIOD:
+            target_velocity = -amplitude + 2.0 * amplitude * t / self._HALF_PERIOD
+            acceleration = 2.0 * amplitude / self._HALF_PERIOD
+        else:
+            target_velocity = amplitude - 2.0 * amplitude * (
+                t - self._HALF_PERIOD
+            ) / self._HALF_PERIOD
+            acceleration = -2.0 * amplitude / self._HALF_PERIOD
+
+        # The one-argument calculate() ignores acceleration, so add the A term
+        # explicitly to exercise it during the ramp.
+        voltage = (
+            self._feedforward.calculate(target_velocity)
+            + self._kA * acceleration
+        )
+
+        # The CANcoder velocity is cached; refresh it once per loop.
+        self._module.refreshTurnPosition()
+        actual_velocity = (
+            self._module.getSteeringVelocityTurnsPerSecond() * 2.0 * math.pi
+        )
+
+        wpilib.SmartDashboard.putNumber(self._KEY_TARGET, target_velocity)
+        wpilib.SmartDashboard.putNumber(self._KEY_ACTUAL, actual_velocity)
+        wpilib.SmartDashboard.putNumber(
+            self._KEY_ERROR, target_velocity - actual_velocity
+        )
+        wpilib.SmartDashboard.putNumber(self._KEY_VOLTAGE, voltage)
+
+        self._module.setSteeringVoltage(voltage)
+
+    def end(self, interrupted: bool) -> None:
+        """Stop the steering motor when tuning ends."""
         self._swerve.stop()
