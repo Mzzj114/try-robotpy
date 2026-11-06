@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """RobotPy Command-based robot with an MK4i NEO Vortex swerve drivetrain."""
 
-from collections.abc import Callable
-
 import commands2
 import wpilib
-from commands2.button import Trigger
+from commands2.button import CommandXboxController, Trigger
 from commands2.sysid import SysIdRoutine
 from pathplannerlib.auto import PathPlannerAuto
 
@@ -29,7 +27,7 @@ class Robot(commands2.TimedCommandRobot):
         self.addPeriodic(self.swerve.publishTelemetry, 0.1)
         self.addPeriodic(self.swerve.publishSlowTelemetry, 1.0, 0.05)
 
-        self.driver_controller = wpilib.XboxController(
+        self.driver_controller = CommandXboxController(
             OIConstants.kDriverControllerPort
         )
         self.steering_sysid = SteeringSysIdCommands(self.swerve)
@@ -84,32 +82,27 @@ class Robot(commands2.TimedCommandRobot):
         # while the button is held and releasing it stops the motors. Put the
         # robot on blocks first: the azimuth modules must pivot freely, and
         # they have no hard stop. Release early if a cable starts to twist.
-        def _button_pressed(read_button: Callable[[], bool]) -> bool:
-            """Avoid HAL warnings when no controller is plugged in."""
-            return self.driver_controller.isConnected() and read_button()
+        def _button_trigger(button: Trigger) -> Trigger:
+            """Ignore button reads when no controller is plugged in."""
+            connected = Trigger(
+                lambda: self.driver_controller.getHID().isConnected()
+            )
+            return connected.and_(button)
 
-        Trigger(
-            lambda: _button_pressed(self.driver_controller.getAButton)
-        ).whileTrue(
+        _button_trigger(self.driver_controller.a()).whileTrue(
             self.steering_sysid.quasistatic(
                 SysIdRoutine.Direction.kForward
             )
         )
-        Trigger(
-            lambda: _button_pressed(self.driver_controller.getBButton)
-        ).whileTrue(
+        _button_trigger(self.driver_controller.b()).whileTrue(
             self.steering_sysid.quasistatic(
                 SysIdRoutine.Direction.kReverse
             )
         )
-        Trigger(
-            lambda: _button_pressed(self.driver_controller.getXButton)
-        ).whileTrue(
+        _button_trigger(self.driver_controller.x()).whileTrue(
             self.steering_sysid.dynamic(SysIdRoutine.Direction.kForward)
         )
-        Trigger(
-            lambda: _button_pressed(self.driver_controller.getYButton)
-        ).whileTrue(
+        _button_trigger(self.driver_controller.y()).whileTrue(
             self.steering_sysid.dynamic(SysIdRoutine.Direction.kReverse)
         )
 
@@ -145,7 +138,7 @@ class Robot(commands2.TimedCommandRobot):
         wpilib.SmartDashboard.putBoolean(
             "Driver/A Button",
             self.driver_controller.isConnected()
-            and self.driver_controller.getAButton(),
+            and self.driver_controller.getHID().getAButton(),
         )
         
         wpilib.SmartDashboard.putNumber(

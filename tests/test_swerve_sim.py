@@ -101,7 +101,7 @@ def test_odometry_follows_physics_forward(
     with control.run_robot():
         robot.swerve.resetPose(Pose2d())
         controller_sim = wpilib.simulation.XboxControllerSim(
-            robot.driver_controller
+            robot.driver_controller.getHID()
         )
         # The robot negates the stick axes, so -1 on Y means "forward".
         controller_sim.setLeftY(-1.0)
@@ -123,7 +123,7 @@ def test_odometry_follows_physics_rotation(
     with control.run_robot():
         robot.swerve.resetPose(Pose2d())
         controller_sim = wpilib.simulation.XboxControllerSim(
-            robot.driver_controller
+            robot.driver_controller.getHID()
         )
         controller_sim.setLeftY(0.0)
         controller_sim.setLeftX(0.0)
