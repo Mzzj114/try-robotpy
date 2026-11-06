@@ -163,7 +163,7 @@ class AutoConstants:
     # rotation in radians per second. Start P-only and tune on the real robot.
     kTranslationP = 2.0
     kTranslationI = 0.0
-    kTranslationD = 1.0
+    kTranslationD = 0.4
     kRotationP = 2.0
     kRotationI = 0.0
     kRotationD = 0.0

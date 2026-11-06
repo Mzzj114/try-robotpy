@@ -21,13 +21,6 @@ from subsystems.swerve_drive import SwerveDrive
 class Robot(commands2.TimedCommandRobot):
     def robotInit(self) -> None:
         """Create subsystems, input devices, and default commands."""
-        # SysId writes through DataLogManager, so logging must be running
-        # before any characterization test. This also records NetworkTables
-        # and Driver Station data to the same .wpilog.
-        wpilib.DataLogManager.start()
-        wpilib.DriverStation.startDataLog(
-            wpilib.DataLogManager.getLog()
-        )
 
         self.swerve = SwerveDrive()
 
@@ -57,6 +50,36 @@ class Robot(commands2.TimedCommandRobot):
             )
         )
 
+        # Sysid stuff
+        # self.startDataloger()
+        # self.configureSysidKeybinds()
+
+        # Tuning helpers: run these from SmartDashboard to tune one module's
+        # drive/steering PID live. They interrupt the default teleop command.
+        wpilib.SmartDashboard.putData(
+            "Tune/Tune Drive PID", TuneDrivePID(self.swerve)
+        )
+        wpilib.SmartDashboard.putData(
+            "Tune/Tune Turn PID", TuneTurnPID(self.swerve)
+        )
+        wpilib.SmartDashboard.putData(
+            "Tune/Tune Turn FF", TuneTurnFF(self.swerve)
+        )
+
+        # Manual single-module test: type a speed (m/s) and angle (deg) in
+        # SmartDashboard to command one module directly.
+        wpilib.SmartDashboard.putData(
+            "Test/Module State", ModuleTestCommand(self.swerve)
+        )
+
+        # Debug-only remote Python console over NetworkTables. Write code to
+        # /Debug/Cmd and read the result from /Debug/Out. Test use only; never
+        # enable this on a competition robot.
+        self.debug = DebugConsole(self)
+
+        print("[robotInit] Swerve drive and teleop command ready")
+
+    def configureSysidKeybinds(self) -> None:
         # Steering SysId. These are test-only bindings: the command runs only
         # while the button is held and releasing it stops the motors. Put the
         # robot on blocks first: the azimuth modules must pivot freely, and
@@ -90,30 +113,14 @@ class Robot(commands2.TimedCommandRobot):
             self.steering_sysid.dynamic(SysIdRoutine.Direction.kReverse)
         )
 
-        # Tuning helpers: run these from SmartDashboard to tune one module's
-        # drive/steering PID live. They interrupt the default teleop command.
-        wpilib.SmartDashboard.putData(
-            "Tune/Tune Drive PID", TuneDrivePID(self.swerve)
+    def startDataloger(self):
+        # SysId writes through DataLogManager, so logging must be running
+        # before any characterization test. This also records NetworkTables
+        # and Driver Station data to the same .wpilog.
+        wpilib.DataLogManager.start()
+        wpilib.DriverStation.startDataLog(
+            wpilib.DataLogManager.getLog()
         )
-        wpilib.SmartDashboard.putData(
-            "Tune/Tune Turn PID", TuneTurnPID(self.swerve)
-        )
-        wpilib.SmartDashboard.putData(
-            "Tune/Tune Turn FF", TuneTurnFF(self.swerve)
-        )
-
-        # Manual single-module test: type a speed (m/s) and angle (deg) in
-        # SmartDashboard to command one module directly.
-        wpilib.SmartDashboard.putData(
-            "Test/Module State", ModuleTestCommand(self.swerve)
-        )
-
-        # Debug-only remote Python console over NetworkTables. Write code to
-        # /Debug/Cmd and read the result from /Debug/Out. Test use only; never
-        # enable this on a competition robot.
-        self.debug = DebugConsole(self)
-
-        print("[robotInit] Swerve drive and teleop command ready")
 
     def robotPeriodic(self) -> None:
         """Run the command scheduler and publish driver input every loop."""
