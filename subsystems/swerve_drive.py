@@ -19,6 +19,7 @@ from pathplannerlib.auto import AutoBuilder
 from pathplannerlib.config import PIDConstants, RobotConfig
 from pathplannerlib.controller import PPHolonomicDriveController
 from wpilib.sysid import SysIdRoutineLog
+from wpimath.controller import PIDController
 from wpimath.estimator import SwerveDrive4PoseEstimator
 from wpimath.geometry import Pose2d, Rotation2d
 from wpimath.kinematics import (
@@ -128,24 +129,26 @@ class SwerveDrive(commands2.Subsystem):
         # in deploy/pathplanner/settings.json (mass, module positions, wheel
         # radius, gearing), so the GUI must stay the source of truth for the
         # robot geometry.
+        self._robot_config = RobotConfig.fromGUISettings()
+        self._path_controller = PPHolonomicDriveController(
+            PIDConstants(
+                AutoConstants.kTranslationP,
+                AutoConstants.kTranslationI,
+                AutoConstants.kTranslationD,
+            ),
+            PIDConstants(
+                AutoConstants.kRotationP,
+                AutoConstants.kRotationI,
+                AutoConstants.kRotationD,
+            ),
+        )
         AutoBuilder.configure(
             self.getPose,
             self.resetPose,
             self.getRobotRelativeSpeeds,
             lambda speeds, _feedforwards: self.driveRobotRelative(speeds),
-            PPHolonomicDriveController(
-                PIDConstants(
-                    AutoConstants.kTranslationP,
-                    AutoConstants.kTranslationI,
-                    AutoConstants.kTranslationD,
-                ),
-                PIDConstants(
-                    AutoConstants.kRotationP,
-                    AutoConstants.kRotationI,
-                    AutoConstants.kRotationD,
-                ),
-            ),
-            RobotConfig.fromGUISettings(),
+            self._path_controller,
+            self._robot_config,
             self._should_flip_path,
             self,
         )
@@ -198,13 +201,13 @@ class SwerveDrive(commands2.Subsystem):
 
         desired = self._desired_chassis_speeds
         wpilib.SmartDashboard.putNumber(
-            "Swerve/Chassis Speeds/vx (m/s)", desired.vx
+            "Swerve/Chassis Speeds/vx (m*s^-1)", desired.vx
         )
         wpilib.SmartDashboard.putNumber(
-            "Swerve/Chassis Speeds/vy (m/s)", desired.vy
+            "Swerve/Chassis Speeds/vy (m*s^-1)", desired.vy
         )
         wpilib.SmartDashboard.putNumber(
-            "Swerve/Chassis Speeds/omega (deg/s)", desired.omega_dps
+            "Swerve/Chassis Speeds/omega (deg*s^-1)", desired.omega_dps
         )
 
         # Battery voltage confirms the bus is healthy while testing motors.
@@ -343,6 +346,31 @@ class SwerveDrive(commands2.Subsystem):
             self._modulePositions(),
             pose,
         )
+
+    def getPathFollowingController(self) -> PPHolonomicDriveController:
+        """Return the controller PathPlanner uses for all path following."""
+        return self._path_controller
+
+    def getRobotConfig(self) -> RobotConfig:
+        """Return the PathPlanner robot config loaded from the GUI settings."""
+        return self._robot_config
+
+    def getPathTranslationPID(
+        self,
+    ) -> tuple[PIDController, PIDController]:
+        """Return the field-relative X/Y PID controllers for path translation.
+
+        PathPlanner's PPHolonomicDriveController has no public gain setters, so
+        live tuning writes directly to its underlying WPILib controllers.
+        """
+        return (
+            self._path_controller._xController,
+            self._path_controller._yController,
+        )
+
+    def getPathRotationPID(self) -> PIDController:
+        """Return the rotation PID controller used for path following."""
+        return self._path_controller._rotationController
 
     def _modulePositions(
         self,
@@ -494,7 +522,7 @@ class SwerveDrive(commands2.Subsystem):
         for module, angle in zip(self._modules, x_angles):
             module.setDesiredState(SwerveModuleState(0.0, angle))
 
-    def getModules(self) -> tuple:
+    def getModules(self) -> tuple[SwerveModule,SwerveModule,SwerveModule,SwerveModule]:
         """Return the four swerve modules for simulation access."""
         return self._modules
 

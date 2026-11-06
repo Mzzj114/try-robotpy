@@ -10,6 +10,7 @@ from pathplannerlib.auto import PathPlannerAuto
 from commands.module_test import ModuleTestCommand
 from commands.swerve_drive import SwerveDriveCommand
 from commands.sysid import SteeringSysIdCommands
+from commands.tune_path_pid import TunePathRotationPID, TunePathTranslationPID
 from commands.tune_pid import TuneDrivePID, TuneTurnFF, TuneTurnPID
 from constants import AutoConstants, OIConstants
 from debug_console import DebugConsole
@@ -30,27 +31,16 @@ class Robot(commands2.TimedCommandRobot):
         self.driver_controller = CommandXboxController(
             OIConstants.kDriverControllerPort
         )
-        self.steering_sysid = SteeringSysIdCommands(self.swerve)
 
         # Load the auto once at startup so the autonomous period does not pay
         # the file-parsing cost. AutoBuilder is configured by SwerveDrive.
         self.auto_command = PathPlannerAuto(AutoConstants.kAutoName)
 
-        # Default command: field-oriented swerve drive from the driver's Xbox controller.
-        # Left stick drives translation; right stick X rotates the chassis.
-        self.swerve.setDefaultCommand(
-            SwerveDriveCommand(
-                self.swerve,
-                x_supplier=lambda: -self.driver_controller.getLeftY(),
-                y_supplier=lambda: -self.driver_controller.getLeftX(),
-                rot_supplier=lambda: -self.driver_controller.getRightX(),
-                field_relative=True,
-            )
-        )
-
         # Sysid stuff
         # self.startDataloger()
         # self.configureSysidKeybinds()
+        self.steering_sysid = SteeringSysIdCommands(self.swerve)
+        self.configureKeybinds()
 
         # Tuning helpers: run these from SmartDashboard to tune one module's
         # drive/steering PID live. They interrupt the default teleop command.
@@ -62,6 +52,18 @@ class Robot(commands2.TimedCommandRobot):
         )
         wpilib.SmartDashboard.putData(
             "Tune/Tune Turn FF", TuneTurnFF(self.swerve)
+        )
+
+        # PathPlanner PID tuning: follow the matching path from
+        # deploy/pathplanner/paths while editing that axis's gains live.
+        wpilib.SmartDashboard.putData(
+            "Tune/Tune Path Translation PID",
+            TunePathTranslationPID(self.swerve),
+        )
+
+        wpilib.SmartDashboard.putData(
+            "Tune/Tune Path Rotation PID",
+            TunePathRotationPID(self.swerve),
         )
 
         # Manual single-module test: type a speed (m/s) and angle (deg) in
@@ -76,6 +78,24 @@ class Robot(commands2.TimedCommandRobot):
         self.debug = DebugConsole(self)
 
         print("[robotInit] Swerve drive and teleop command ready")
+
+    def configureKeybinds(self) -> None:
+
+        # Default command: field-oriented swerve drive from the driver's Xbox controller.
+        # Left stick drives translation; right stick X rotates the chassis.
+        self.swerve.setDefaultCommand(
+            SwerveDriveCommand(
+                self.swerve,
+                x_supplier=lambda: -self.driver_controller.getLeftY(),
+                y_supplier=lambda: -self.driver_controller.getLeftX(),
+                rot_supplier=lambda: -self.driver_controller.getRightX(),
+                field_relative=True,
+            )
+        )
+
+        self.driver_controller.a().onTrue(TunePathTranslationPID(self.swerve))
+        self.driver_controller.b().onTrue(TunePathRotationPID(self.swerve))
+
 
     def configureSysidKeybinds(self) -> None:
         # Steering SysId. These are test-only bindings: the command runs only

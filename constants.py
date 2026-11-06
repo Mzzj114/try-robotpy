@@ -159,6 +159,11 @@ class AutoConstants:
     # Name of the auto routine stored in deploy/pathplanner/autos.
     kAutoName = "New Auto"
 
+    # Path names (without the .path extension) used by the live PID tuning
+    # commands in commands/tune_path_pid.py.
+    kTuneTranslationPathName = "Tune Translatoin PID"
+    kTuneRotationPathName = "Tune Rotational PID"
+
     # Holonomic path-following gains. Translation is in meters per second,
     # rotation in radians per second. Start P-only and tune on the real robot.
     kTranslationP = 2.0
@@ -172,4 +177,5 @@ class AutoConstants:
 class OIConstants:
     """Operator interface constants."""
 
+    # The "port" id that pop up in driver station
     kDriverControllerPort = 0

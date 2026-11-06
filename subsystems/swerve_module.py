@@ -252,10 +252,10 @@ class SwerveModule:
             f"{prefix}/Angle Error (deg)", error_deg
         )
         wpilib.SmartDashboard.putNumber(
-            f"{prefix}/Speed (m/s)", self._drive_encoder.getVelocity()
+            f"{prefix}/Speed (m*s^-1)", self._drive_encoder.getVelocity()
         )
         wpilib.SmartDashboard.putNumber(
-            f"{prefix}/Speed Desired (m/s)", self._desired_state.speed
+            f"{prefix}/Speed Desired (m*s^-1)", self._desired_state.speed
         )
 
         # CANcoder reading in radians. Constant while steering means the
