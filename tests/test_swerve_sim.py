@@ -129,9 +129,13 @@ def test_odometry_follows_physics_rotation(
         controller_sim.setLeftX(0.0)
         controller_sim.setRightX(-1.0)  # robot negates -> positive CCW
 
-        control.step_timing(seconds=1.0, autonomous=False, enabled=True)
+        # At kMaxAngularSpeed (pi rad/s) one full second spins past 180 deg,
+        # where Rotation2d wraps to a negative value. Use half a second so the
+        # heading stays in (0, 180) and the CCW direction is unambiguous.
+        control.step_timing(seconds=0.5, autonomous=False, enabled=True)
 
-        assert robot.swerve.getPose().rotation().degrees() > 30.0
+        heading = robot.swerve.getPose().rotation().degrees()
+        assert 30.0 < heading < 180.0
 
 
 def test_autonomous_runs_pathplanner_auto(
