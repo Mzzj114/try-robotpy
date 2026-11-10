@@ -5,7 +5,7 @@ import commands2
 import wpilib
 from commands2.button import CommandXboxController, Trigger
 from commands2.sysid import SysIdRoutine
-from pathplannerlib.auto import PathPlannerAuto
+from pathplannerlib.auto import AutoBuilder, PathPlannerAuto
 
 from commands.module_test import ModuleTestCommand
 from commands.swerve_drive import SwerveDriveCommand
@@ -93,8 +93,16 @@ class Robot(commands2.TimedCommandRobot):
             )
         )
 
-        self.driver_controller.a().onTrue(TunePathTranslationPID(self.swerve))
-        self.driver_controller.b().onTrue(TunePathRotationPID(self.swerve))
+        self.driver_controller.a().onTrue(TunePathTranslationPID(self.swerve).withTimeout(5))
+        self.driver_controller.b().onTrue(TunePathRotationPID(self.swerve).withTimeout(5))
+
+        # X: pathfind on the fly to the blue-alliance origin, rotating to 0 deg.
+        self.driver_controller.x().onTrue(
+            AutoBuilder.pathfindToPose(
+                AutoConstants.kDriveToOriginPose,
+                AutoConstants.kPathfindingConstraints,
+            ).withTimeout(10)
+        )
 
 
     def configureSysidKeybinds(self) -> None:
@@ -102,6 +110,7 @@ class Robot(commands2.TimedCommandRobot):
         # while the button is held and releasing it stops the motors. Put the
         # robot on blocks first: the azimuth modules must pivot freely, and
         # they have no hard stop. Release early if a cable starts to twist.
+
         def _button_trigger(button: Trigger) -> Trigger:
             """Ignore button reads when no controller is plugged in."""
             connected = Trigger(

@@ -6,7 +6,8 @@ Update them to match the actual robot wiring and chosen gear ratio.
 
 import math
 
-from wpimath.geometry import Translation2d
+from pathplannerlib.path import PathConstraints
+from wpimath.geometry import Pose2d, Rotation2d, Translation2d
 from wpimath.kinematics import SwerveDrive4Kinematics
 from wpimath.units import inchesToMeters
 
@@ -172,6 +173,17 @@ class AutoConstants:
     kRotationP = 2.0
     kRotationI = 0.0
     kRotationD = 0.0
+
+    # On-the-fly pathfinding limits (m/s, m/s^2, rad/s, rad/s^2).
+    kPathfindingConstraints = PathConstraints(
+        DriveConstants.kMaxSpeedMetersPerSecond,
+        DriveConstants.kMaxSpeedMetersPerSecond,
+        DriveConstants.kMaxAngularSpeed,
+        DriveConstants.kMaxAngularSpeed,
+    )
+
+    # Pose the X button drives to, using the blue-alliance field origin.
+    kDriveToOriginPose = Pose2d(0.0, 0.0, Rotation2d())
 
 
 class OIConstants:
