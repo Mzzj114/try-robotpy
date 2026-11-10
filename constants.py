@@ -166,9 +166,9 @@ class AutoConstants:
 
     # Holonomic path-following gains. Translation is in meters per second,
     # rotation in radians per second. Start P-only and tune on the real robot.
-    kTranslationP = 2.0
-    kTranslationI = 0.0
-    kTranslationD = 0.4
+    kTranslationP = 2.5
+    kTranslationI = 0.5
+    kTranslationD = 0.1
     kRotationP = 2.0
     kRotationI = 0.0
     kRotationD = 0.0
