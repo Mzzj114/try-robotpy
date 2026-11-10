@@ -9,6 +9,7 @@ from pathplannerlib.auto import AutoBuilder, PathPlannerAuto
 
 from commands.module_test import ModuleTestCommand
 from commands.swerve_drive import SwerveDriveCommand
+from commands.align_to_pose import AlignToPose
 from commands.sysid import SteeringSysIdCommands
 from commands.tune_path_pid import TunePathRotationPID, TunePathTranslationPID
 from commands.tune_pid import TuneDrivePID, TuneTurnFF, TuneTurnPID
@@ -40,6 +41,8 @@ class Robot(commands2.TimedCommandRobot):
         # self.startDataloger()
         # self.configureSysidKeybinds()
         self.steering_sysid = SteeringSysIdCommands(self.swerve)
+
+        
         self.configureKeybinds()
 
         # Tuning helpers: run these from SmartDashboard to tune one module's
@@ -101,8 +104,9 @@ class Robot(commands2.TimedCommandRobot):
             AutoBuilder.pathfindToPose(
                 AutoConstants.kDriveToOriginPose,
                 AutoConstants.kPathfindingConstraints,
-            ).withTimeout(10)
+            ).andThen(AlignToPose(self.swerve, AutoConstants.kDriveToOriginPose))
         )
+        self.driver_controller.y().whileTrue(AlignToPose(self.swerve, AutoConstants.kDriveToOriginPose))
 
 
     def configureSysidKeybinds(self) -> None:

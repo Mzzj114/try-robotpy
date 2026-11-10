@@ -183,7 +183,7 @@ class AutoConstants:
     )
 
     # Pose the X button drives to, using the blue-alliance field origin.
-    kDriveToOriginPose = Pose2d(0.0, 0.0, Rotation2d())
+    kDriveToOriginPose = Pose2d(0.0, 0.0, Rotation2d(math.pi))
 
 
 class OIConstants:
