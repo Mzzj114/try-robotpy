@@ -55,6 +55,8 @@ class DriveConstants:
     # Deadband for driver controller input.
     kDriveDeadband = 0.09
 
+class ArmConstants:
+    k
 
 class ModuleConstants:
     """Per-module constants (Spark MAX CAN IDs, PID gains, offsets)."""
