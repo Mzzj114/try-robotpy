@@ -56,7 +56,15 @@ class DriveConstants:
     kDriveDeadband = 0.09
 
 class ArmConstants:
-    k
+    kFirstStageMotorIDs = [7,8,9]
+    kFirstStageGearRatio = 1/60
+    kFirstStageArmP = 2.0
+    kFirstStageArmS = 0
+    kFirstStageArmV = 0
+    kFirstStageArmG = 0
+    kAngleConversionFactor = 2*math.pi*kFirstStageGearRatio 
+    kMaxAngularSpeed = 1.0 * math.pi  # rad/s
+    kModuleMaxAngularAcceleration = 2.0 * math.pi  # rad/s^2
 
 class ModuleConstants:
     """Per-module constants (Spark MAX CAN IDs, PID gains, offsets)."""
